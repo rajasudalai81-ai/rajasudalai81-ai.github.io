@@ -37,7 +37,7 @@
       /* Tamil-safe stack first. Do not put generic families (ui-sans-serif, sans-serif)
          ahead of a real Tamil UI font — on some systems that picks a display face like Oi
          for Tamil at heavy weights, which renders as unreadable blobs. */
-      font-family: "Noto Sans Tamil", "Noto Sans Tamil UI", "Hind Madurai", "Catamaran", "Mukta Malar", "Nirmala UI", "Latha", "Tamil MN", "Tamil Sangam MN", system-ui, sans-serif;
+      font-family: "Noto Sans Tamil", "Noto Sans Tamil UI", "Hind Madurai", "Catamaran", "Mukta Malar", "Noto Sans Devanagari", "Noto Sans Devanagari UI", "Mukta", "Hind", "Nirmala UI", "Latha", "Mangal", "Tamil MN", "Tamil Sangam MN", "Kohinoor Devanagari", "Devanagari Sangam MN", system-ui, sans-serif;
       background:
         radial-gradient(900px 420px at 50% -8%, #FBE3B8 0%, transparent 60%),
         var(--bg);
@@ -54,6 +54,47 @@
       font-size: 18px;
       min-height: 56px;
     }
+    /* Hindi / Marathi: a Devanagari-safe stack first (weights stay <= 700). */
+    body.lang-hi, body.lang-mr {
+      font-family: "Noto Sans Devanagari", "Noto Sans Devanagari UI", "Mukta", "Hind", "Nirmala UI", "Mangal", "Kohinoor Devanagari", "Devanagari Sangam MN", "Noto Sans Tamil", "Hind Madurai", system-ui, sans-serif;
+    }
+    button .bi { align-items: center; }
+    .bi .en[hidden] { display: none; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+    .lang-grid button {
+      min-height: 64px; border-radius: 16px; border: 2px solid var(--line); background: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-weight: 700;
+    }
+    .lang-grid button .lg-n { font-size: 22px; line-height: 1.2; }
+    .lang-grid button .lg-e { font-size: 12px; opacity: 0.75; font-weight: 650; }
+    .lang-grid button.on { border-color: var(--coffee); background: var(--coffee); color: #fff; }
+    .lang-grid.big button { min-height: 92px; }
+    .lang-grid.big button .lg-n { font-size: 28px; }
+    .lang-first { position: fixed; inset: 0; z-index: 40; background: rgba(28,18,12,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .lang-first[hidden] { display: none !important; }
+    .lang-first-box { background: var(--paper); border-radius: 24px; padding: 20px 16px; width: min(420px, 100%); box-shadow: var(--shadow-lg); text-align: center; }
+    .lang-first-box h2 { margin: 4px 0 4px; font-size: 22px; font-weight: 700; }
+    .lang-first-ico { font-size: 40px; }
+    .toast-btns { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+    .toast-btns button[hidden] { display: none; }
+    #toastMsg { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+    #toastMsg .ta { font-size: 16px; }
+    #toastMsg .en { font-size: 12px; font-weight: 650; opacity: 0.85; }
+    #toastMsg .t-line { font-size: 14px; font-weight: 650; opacity: 0.95; }
+    #toastMsg .t-warn { color: #FFD7A8; font-size: 13px; }
+    #toastEdit { border: 1.5px solid #FFF8EE; background: transparent; color: #FFF8EE; border-radius: 999px; min-height: 40px; padding: 0 12px; font-weight: 700; white-space: nowrap; }
+    #toastUndo .en, #toastEdit .en { font-size: 10px; }
+    #toastUndo .ta, #toastEdit .ta { font-size: 14px; }
+    #toastUndo, #toastEdit { min-width: 84px; padding: 0 10px; }
+    #toastMsg .t-line { line-height: 1.25; }
+    .item .en-sub, .menu-btn .en-sub { display: block; font-size: 12px; font-weight: 650; opacity: 0.75; }
+    .meta.who { font-weight: 700; color: var(--coffee-2); }
+    .row.flash { animation: rowflash 1.6s ease 2; }
+    @keyframes rowflash { 0%,100% { box-shadow: var(--shadow); } 50% { box-shadow: 0 0 0 3px var(--saffron); } }
+    .tl { display: inline-flex; flex-direction: column; line-height: 1.15; vertical-align: top; }
+    .tl .en { display: block; font-size: 11px; font-weight: 650; opacity: 0.8; }
+    .lang-tog button { min-width: 64px; }
+    [hidden] { display: none !important; }
     .bi { display: flex; flex-direction: column; align-items: inherit; line-height: 1.15; }
     .bi .en { font-size: 12px; font-weight: 650; opacity: 0.8; letter-spacing: 0.01em; }
     .app { max-width: 560px; margin: 0 auto; padding: calc(12px + var(--safe-t)) 14px calc(96px + var(--safe-b)); }
@@ -341,6 +382,9 @@
       background: #F0E7DB; font-size: 24px; font-weight: 700;
     }
     .lab { display: block; font-weight: 700; margin: 12px 0 6px; font-size: 15px; }
+    .lab.bi { display: flex; flex-direction: column; align-items: flex-start; }
+    .set-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .set-h h3 { margin: 0; }
     .full, .field input, .field select, textarea, select {
       width: 100%; border: 1.5px solid var(--line); border-radius: 14px;
       padding: 12px 14px; min-height: 56px; background: #fff; font-size: 18px;
@@ -440,17 +484,17 @@
           <h1 id="shopName">இட்லி தோசை டீ கடை</h1>
           <div class="sub">இட்லி • தோசை • டீ — Mumbai</div>
         </div>
-        <button type="button" class="icon-btn" id="btnSettings" aria-label="அமைப்புகள் / Settings">⚙</button>
+        <button type="button" class="icon-btn" id="btnSettings" aria-label="அமைப்புகள் / Settings" data-i18n-aria="அமைப்புகள்|Settings">⚙</button>
       </div>
     </header>
 
     <div class="date-bar">
       <div class="label" id="dateLabel"></div>
       <button type="button" class="linkish" id="todayBtn" hidden><span class="bi" style="align-items:flex-end"><span class="ta">இன்று</span><span class="en">Today</span></span></button>
-      <input type="date" id="dateInput" aria-label="தேதி / Date">
+      <input type="date" id="dateInput" aria-label="தேதி / Date" data-i18n-aria="தேதி|Date">
     </div>
 
-    <section class="totals" aria-label="இன்றைய கணக்கு / Today's totals">
+    <section class="totals" aria-label="இன்றைய கணக்கு / Today's totals" data-i18n-aria="இன்றைய கணக்கு|Today's totals">
       <div class="tot income"><div class="k bi" style="align-items:center"><span class="ta">வரவு</span><span class="en">Income</span></div><div class="v" id="totIncome">₹0</div></div>
       <div class="tot expense"><div class="k bi" style="align-items:center"><span class="ta">செலவு</span><span class="en">Expense</span></div><div class="v" id="totExpense">₹0</div></div>
       <div class="tot profit"><div class="k bi" style="align-items:center"><span class="ta">லாபம்</span><span class="en">Profit</span></div><div class="v" id="totProfit">₹0</div></div>
@@ -463,11 +507,11 @@
 
     <div id="panelToday" class="panel">
       <div class="speak-row">
-        <button type="button" class="mic-giant" id="micBig" aria-label="குரல் / Voice">
+        <button type="button" class="mic-giant" id="micBig" aria-label="குரல் / Voice" data-i18n-aria="குரல்|Voice">
           <span class="mic-ico" id="micIcon" aria-hidden="true"></span>
           <span class="bi" style="align-items:center"><span class="ta" id="micLabel">பேசு</span><span class="en">Speak</span></span>
         </button>
-        <button type="button" class="add-fab" id="btnAdd" aria-label="வரவு அல்லது செலவு / Add sale or expense" aria-expanded="false" aria-controls="addMenu">
+        <button type="button" class="add-fab" id="btnAdd" aria-label="வரவு அல்லது செலவு / Add sale or expense" data-i18n-aria="வரவு அல்லது செலவு|Add sale or expense" aria-expanded="false" aria-controls="addMenu">
           <span class="add-ico" id="addIcon" aria-hidden="true"></span>
           <span class="bi" style="align-items:center"><span class="ta">மேலும்</span><span class="en">Add</span></span>
         </button>
@@ -484,22 +528,23 @@
       </div>
 
       <div class="quick">
-        <input id="quickEntry" autocomplete="off" placeholder="30 ரூவா கழி 50 வருது / 5 idli 3 tea">
-        <button type="button" id="quickBtn"><span class="bi" style="align-items:center"><span class="ta">பார்</span><span class="en">Parse</span></span></button>
+        <input id="quickEntry" autocomplete="off" enterkeyhint="done" placeholder="20000 போடு / 100 டீ ரவி பேருக்கு">
+        <button type="button" id="quickBtn"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
       </div>
 
       <div class="voice-panel" id="voicePanel">
         <div class="lang-tog" id="langTog">
           <button type="button" data-lang="ta-IN" class="on">தமிழ்</button>
           <button type="button" data-lang="en-IN">English</button>
-          <button type="button" data-lang="tanglish">Tanglish</button>
+          <button type="button" data-lang="hi-IN">हिंदी</button>
+          <button type="button" data-lang="mr-IN">मराठी</button>
         </div>
         <div class="live-box" id="liveBox"><span class="en">…</span></div>
         <div class="voice-error bi" id="voiceError" hidden>
           <span class="ta" id="voiceErrorTa"></span>
           <span class="en" id="voiceErrorEn"></span>
         </div>
-        <p class="voice-note" id="voiceNote" hidden>குரல் இந்த தொலைபேசியில் இல்லை — கீழே தட்டச்சு செய்தால் போதும். / Voice not available — type the same sentence below.</p>
+        <p class="voice-note" id="voiceNote" hidden><span class="bi"><span class="ta">குரல் இந்த தொலைபேசியில் இல்லை — கீழே தட்டச்சு செய்தால் போதும்.</span><span class="en">Voice not available — type the same sentence below.</span></span></p>
       </div>
 
       <h2 class="sec bi"><span class="ta">விரைவு மெனு</span><span class="en">Quick menu — tap once to add 1, long-press for qty</span></h2>
@@ -548,9 +593,9 @@
         <div class="card">
           <h2 class="sec bi" style="margin-top:0"><span class="ta">சரக்கு இருப்பு</span><span class="en">Stock on hand</span></h2>
           <div class="shop-actions">
-            <button type="button" id="btnStockIn">+ இருப்பு / Add</button>
-            <button type="button" id="btnStockOut">பயன்படுத்து / Use</button>
-            <button type="button" id="btnStockNew">+ பொருள் / New item</button>
+            <button type="button" id="btnStockIn"><span class="bi"><span class="ta">+ இருப்பு</span><span class="en">Add stock</span></span></button>
+            <button type="button" id="btnStockOut"><span class="bi"><span class="ta">பயன்படுத்து</span><span class="en">Use</span></span></button>
+            <button type="button" id="btnStockNew"><span class="bi"><span class="ta">+ பொருள்</span><span class="en">New item</span></span></button>
           </div>
           <form class="shop-form" id="stockMoveForm" hidden>
             <input type="hidden" id="stockMoveKind" value="in">
@@ -573,8 +618,8 @@
               <span class="bi"><span class="ta">செலவாகவும் பதிவு செய்</span><span class="en">Also log as an expense</span></span>
             </label>
             <div class="shop-actions">
-              <button type="submit" class="save" id="stockMoveSave" style="width:auto;padding:0 16px">சேமி / Save</button>
-              <button type="button" class="ghost" id="stockMoveCancel" style="width:auto">வேண்டாம் / Cancel</button>
+              <button type="submit" class="save" id="stockMoveSave" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="stockMoveCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
             </div>
             <div class="form-error" id="stockMoveError"></div>
           </form>
@@ -594,15 +639,15 @@
               </div>
             </div>
             <div class="shop-actions">
-              <button type="submit" class="save" style="width:auto;padding:0 16px">சேமி / Save</button>
-              <button type="button" class="ghost" id="stockNewCancel" style="width:auto">வேண்டாம் / Cancel</button>
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="stockNewCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
             </div>
           </form>
           <div id="stockList"></div>
         </div>
         <div class="card" style="background:#FFF9E6">
           <strong class="bi"><span class="ta">குறைந்த இருப்பு எச்சரிக்கை</span><span class="en">Low-stock alerts</span></strong>
-          <p class="help" id="stockAlertBox" style="margin:6px 0 0">அனைத்து பொருட்களும் போதிய அளவில் உள்ளன. / All tracked items are above the alert level.</p>
+          <p class="help" id="stockAlertBox" style="margin:6px 0 0"><span class="bi"><span class="ta">அனைத்து பொருட்களும் போதிய அளவில் உள்ளன.</span><span class="en">All tracked items are above the alert level.</span></span></p>
         </div>
       </div>
 
@@ -614,7 +659,7 @@
         <div class="card">
           <h2 class="sec bi" style="margin-top:0"><span class="ta">ஒரு அலகு லாபம்</span><span class="en">Set making cost per item, then see unit profit</span></h2>
           <div id="marginList"></div>
-          <button type="button" class="save" id="saveMargins" style="margin-top:10px">சேமி / Save costs</button>
+          <button type="button" class="save" id="saveMargins" style="margin-top:10px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save costs</span></span></button>
         </div>
       </div>
 
@@ -622,7 +667,7 @@
         <div class="card">
           <h2 class="sec bi" style="margin-top:0"><span class="ta">பணியாளர் கூலி</span><span class="en">Staff wages — paid wages and advances count as expenses</span></h2>
           <div class="shop-actions">
-            <button type="button" id="btnAddStaff">+ பணியாளர் / Add staff</button>
+            <button type="button" id="btnAddStaff"><span class="bi"><span class="ta">+ பணியாளர்</span><span class="en">Add staff</span></span></button>
           </div>
           <form class="shop-form" id="staffForm" hidden>
             <label class="lab bi" for="staffName"><span class="ta">பெயர்</span><span class="en">Name</span></label>
@@ -638,8 +683,8 @@
               </div>
             </div>
             <div class="shop-actions">
-              <button type="submit" class="save" style="width:auto;padding:0 16px">சேமி / Save</button>
-              <button type="button" class="ghost" id="staffFormCancel" style="width:auto">வேண்டாம் / Cancel</button>
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="staffFormCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
             </div>
             <div class="form-error" id="staffFormError"></div>
           </form>
@@ -656,8 +701,8 @@
               <span class="bi"><span class="ta">இப்போது செலுத்தினேன் (செலவு)</span><span class="en">Paid now (counts as expense)</span></span>
             </label>
             <div class="shop-actions">
-              <button type="submit" class="save" style="width:auto;padding:0 16px">சேமி / Save</button>
-              <button type="button" class="ghost" id="wageFormCancel" style="width:auto">வேண்டாம் / Cancel</button>
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="wageFormCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
             </div>
             <div class="form-error" id="wageFormError"></div>
           </form>
@@ -696,7 +741,7 @@
   <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
     <div class="sheet-h">
       <h3 id="formTitle">புதிய வரவு</h3>
-      <button type="button" class="x" id="closeForm" aria-label="மூடு / Close">×</button>
+      <button type="button" class="x" id="closeForm" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
     </div>
     <form id="entryForm" action="javascript:void(0)" novalidate>
       <label class="lab bi" for="fldItem"><span class="ta">பொருள் / விவரம்</span><span class="en">Item / details</span></label>
@@ -751,7 +796,7 @@
             <div class="hint" id="hintRefAmount"></div>
           </div>
         </div>
-        <p class="hint">10 கிலோ = ₹100 என்றால், 3 கிலோவுக்கு தானே ₹30 வரும். / 10 kg = ₹100 → 3 kg becomes ₹30.</p>
+        <p class="hint"><span class="bi"><span class="ta">10 கிலோ = ₹100 என்றால், 3 கிலோவுக்கு தானே ₹30 வரும்.</span><span class="en">10 kg = ₹100 → 3 kg becomes ₹30.</span></span></p>
       </div>
 
       <div id="vehicleWrap" hidden>
@@ -761,7 +806,7 @@
 
       <label class="lab bi" id="noteLabel" for="fldNote"><span class="ta">குறிப்பு / காரணம்</span><span class="en">Note / reason</span></label>
       <div class="field"><textarea id="fldNote" placeholder="சரிகட்டு, கழிவு, அல்லது வேறு விவரம் / Adjustment or other detail"></textarea></div>
-      <p class="note-req" id="noteReqMsg" hidden>மைனஸ் / கழிவுத் தொகைக்கு இந்தக் குறிப்பு கட்டாயம். / A note is required for minus adjustments.</p>
+      <p class="note-req" id="noteReqMsg" hidden><span class="bi"><span class="ta">மைனஸ் / கழிவுத் தொகைக்கு இந்தக் குறிப்பு கட்டாயம்.</span><span class="en">A note is required for minus adjustments.</span></span></p>
 
       </div>
 
@@ -775,8 +820,8 @@
         <button type="button" class="pay-chip" data-pay="upi"><span class="bi" style="align-items:center"><span class="ta">UPI</span><span class="en">UPI</span></span></button>
         <button type="button" class="pay-chip" data-pay="credit"><span class="bi" style="align-items:center"><span class="ta">கடன்</span><span class="en">Credit</span></span></button>
       </div>
-      <div id="customerWrap" hidden>
-        <label class="lab bi" id="customerLabel" for="fldCustomer"><span class="ta">யாருக்குக் கடன்?</span><span class="en">Who owes? (name)</span></label>
+      <div id="customerWrap">
+        <label class="lab bi" id="customerLabel" for="fldCustomer"><span class="ta">பெயர் (விருப்பம்)</span><span class="en">Name (optional)</span></label>
         <input class="full" id="fldCustomer" autocomplete="off" placeholder="எ.கா. ரமேஷ் / Ramesh">
       </div>
       <div class="form-error" id="formError" role="alert"></div>
@@ -796,17 +841,24 @@
   <div class="settings" id="settings" hidden role="dialog" aria-modal="true">
     <div class="set-h">
       <h3 class="bi"><span class="ta">அமைப்புகள்</span><span class="en">Settings</span></h3>
-      <button type="button" class="x" id="closeSettings" aria-label="மூடு / Close">×</button>
+      <button type="button" class="x" id="closeSettings" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
+    </div>
+    <h3 class="bi" style="margin:4px 0 6px;font-size:18px"><span class="ta">மொழி</span><span class="en">Language</span></h3>
+    <div class="lang-grid" id="setLangGrid">
+      <button type="button" data-setlang="ta"><span class="lg-n">தமிழ்</span><span class="lg-e">Tamil</span></button>
+      <button type="button" data-setlang="en"><span class="lg-n">English</span><span class="lg-e">English</span></button>
+      <button type="button" data-setlang="hi"><span class="lg-n">हिंदी</span><span class="lg-e">Hindi</span></button>
+      <button type="button" data-setlang="mr"><span class="lg-n">मराठी</span><span class="lg-e">Marathi</span></button>
     </div>
     <label class="lab bi" for="setShopName"><span class="ta">கடையின் பெயர்</span><span class="en">Shop name</span></label>
     <input class="full" id="setShopName" maxlength="80">
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">மெனு விலைகள்</span><span class="en">Menu prices (editable)</span></h3>
-    <p class="help">விரைவு பொத்தான்களின் விலை இங்கே மாற்றலாம். / These prices are used when you tap a menu button. Making cost (for item profit) can also be set on the Shop → Margins tab.</p>
+    <p class="help"><span class="bi"><span class="ta">விரைவு பொத்தான்களின் விலை இங்கே மாற்றலாம்.</span><span class="en">These prices are used when you tap a menu button. Making cost (for item profit) can also be set on the Shop → Margins tab.</span></span></p>
     <div id="menuEditor"></div>
     <button type="button" class="ghost" id="addMenuItem" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">+ மெனுப் பொருள்</span><span class="en">+ Menu item</span></span></button>
     <button type="button" class="save" id="saveSettings" style="margin-top:12px"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save settings</span></span></button>
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">காப்பு</span><span class="en">Backup</span></h3>
-    <p class="help">பதிவுகள் இந்தத் தொலைபேசியின் நினைவிலேயே இருக்கும். வேறு போனுக்கு மாற்றினாலோ, தரவை அழித்தாலோ காப்புக் கோப்பு தேவை. / Entries stay on this phone. Export a backup before changing phones.</p>
+    <p class="help"><span class="bi"><span class="ta">பதிவுகள் இந்தத் தொலைபேசியின் நினைவிலேயே இருக்கும். வேறு போனுக்கு மாற்றினாலோ, தரவை அழித்தாலோ காப்புக் கோப்பு தேவை.</span><span class="en">Entries stay on this phone. Export a backup before changing phones.</span></span></p>
     <button type="button" class="ghost" id="btnExport" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">காப்புப் பதிவிறக்கம் (JSON)</span><span class="en">Download backup (JSON)</span></span></button>
     <label class="ghost" style="display:block;text-align:center;padding:12px;margin:6px 0;border-radius:14px;font-weight:700">
       <span class="bi" style="align-items:center"><span class="ta">காப்பை மீட்டெடு</span><span class="en">Restore backup</span></span>
@@ -814,13 +866,221 @@
     </label>
   </div>
 
+  <div class="lang-first" id="langFirst" hidden role="dialog" aria-modal="true" aria-labelledby="langFirstTitle">
+    <div class="lang-first-box">
+      <div class="lang-first-ico" aria-hidden="true">🗣️</div>
+      <h2 id="langFirstTitle">மொழி · Language · भाषा</h2>
+      <p class="help">Choose your language. You can change it later in Settings ⚙</p>
+      <div class="lang-grid big">
+        <button type="button" data-firstlang="ta"><span class="lg-n">தமிழ்</span><span class="lg-e">Tamil</span></button>
+        <button type="button" data-firstlang="en"><span class="lg-n">English</span><span class="lg-e">English</span></button>
+        <button type="button" data-firstlang="hi"><span class="lg-n">हिंदी</span><span class="lg-e">Hindi</span></button>
+        <button type="button" data-firstlang="mr"><span class="lg-n">मराठी</span><span class="lg-e">Marathi</span></button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" role="status">
     <span id="toastMsg"></span>
-    <button type="button" id="toastUndo" hidden>செயல்தவிர் / Undo</button>
+    <div class="toast-btns">
+      <button type="button" id="toastEdit" hidden><span class="bi" style="align-items:center"><span class="ta">திருத்து</span><span class="en">Edit</span></span></button>
+      <button type="button" id="toastUndo" hidden><span class="bi" style="align-items:center"><span class="ta">செயல்தவிர்</span><span class="en">Undo</span></span></button>
+    </div>
   </div>
 
   <script>
-/* built by node build.js — edit logic.js / app.js, not this file */
+/* built by node build.js — edit i18n.js / logic.js / app.js, not this file */
+/* Kadai Tracker v7 — Hindi / Marathi UI text.
+ * Keyed by the English string used in app.js (P/H/S/TL calls) and the
+ * static .en spans in index.src.html. Tamil stays in app.js / HTML. */
+(function (root) {
+  "use strict";
+  const T = (hi, mr) => ({ hi, mr });
+  const DICT = {
+    "Could not undo": T("वापस नहीं हो सका", "परत करता आले नाही"),
+    "Undone ✓": T("वापस किया ✓", "परत केले ✓"),
+    "Could not read this number": T("यह संख्या समझ नहीं आई", "हा आकडा समजला नाही"),
+    "Cash": T("नकद", "रोख"),
+    "Credit": T("उधार", "उधारी"),
+    "UPI": T("UPI", "UPI"),
+    "No entries yet today. Speak, type, or tap a menu picture above.": T("आज अभी कोई एंट्री नहीं। ऊपर बोलें, लिखें या मेनू की फोटो दबाएँ।", "आज अजून नोंद नाही. वर बोला, लिहा किंवा मेनूचे चित्र दाबा."),
+    "In": T("आय", "जमा"),
+    "Ex": T("खर्च", "खर्च"),
+    "Vehicle": T("गाड़ी", "गाडी"),
+    "paid": T("चुकाया", "भरले"),
+    "Note": T("नोट", "टीप"),
+    "Adj": T("समायोजन", "समायोजन"),
+    "Edit": T("बदलें", "बदला"),
+    "Delete": T("हटाएँ", "काढा"),
+    "No outstanding credit.": T("कोई बाकी उधार नहीं।", "कोणतीही उधारी बाकी नाही."),
+    "entries": T("एंट्री", "नोंदी"),
+    "Mark paid": T("चुका दिया", "भरले"),
+    "Profit": T("मुनाफा", "नफा"),
+    "Loss": T("घाटा", "तोटा"),
+    "End-of-day summary": T("आज का हिसाब", "आजचा हिशोब"),
+    "Income": T("आय", "जमा"),
+    "Expense": T("खर्च", "खर्च"),
+    "Unpaid credit": T("बाकी उधार", "बाकी उधारी"),
+    "Top-selling items this month": T("इस महीने सबसे ज़्यादा बिके", "या महिन्यात सर्वाधिक विकलेले"),
+    "No sales this month.": T("इस महीने कोई बिक्री नहीं।", "या महिन्यात विक्री नाही."),
+    "Saved ✓": T("सेव हो गया ✓", "जतन झाले ✓"),
+    "Set a price in Settings first": T("पहले सेटिंग्स में दाम डालें", "आधी सेटिंग्जमध्ये किंमत टाका"),
+    "Listening… say it in one sentence": T("सुन रहा हूँ… एक वाक्य में बोलें", "ऐकतोय… एका वाक्यात बोला"),
+    "Speak or type one line": T("बोलें या एक लाइन लिखें", "बोला किंवा एक ओळ लिहा"),
+    "Speak": T("बोलो", "बोला"),
+    "Stop": T("रुको", "थांबा"),
+    "Not understood, not saved": T("समझ नहीं आया, सेव नहीं हुआ", "समजले नाही, जतन केले नाही"),
+    "Tap ✏️ on a row to edit it": T("बदलने के लिए लाइन पर ✏️ दबाएँ", "बदलण्यासाठी ओळीवर ✏️ दाबा"),
+    "No amount found. Fix the sentence above (e.g. 100 tea), or fill the form.": T("रकम नहीं मिली। ऊपर का वाक्य ठीक करें (जैसे 100 चाय), या फॉर्म भरें।", "रक्कम सापडली नाही. वरचे वाक्य दुरुस्त करा (उदा. 100 चहा), किंवा फॉर्म भरा."),
+    "Add an amount to the sentence first, or fill the form": T("पहले वाक्य में रकम जोड़ें, या फॉर्म भरें", "आधी वाक्यात रक्कम टाका, किंवा फॉर्म भरा"),
+    "Edit income": T("आय बदलें", "जमा बदला"),
+    "Edit expense": T("खर्च बदलें", "खर्च बदला"),
+    "New income": T("नई आय", "नवीन जमा"),
+    "New expense": T("नया खर्च", "नवीन खर्च"),
+    "Who owes? (name)": T("उधार किसका? (नाम)", "उधारी कोणाची? (नाव)"),
+    "Name (optional)": T("नाम (चाहें तो)", "नाव (हवे असल्यास)"),
+    "Could not read quantity.": T("मात्रा समझ नहीं आई।", "प्रमाण समजले नाही."),
+    "Could not read unit price.": T("एक का दाम समझ नहीं आया।", "एकाची किंमत समजली नाही."),
+    "Could not read reference qty.": T("संदर्भ मात्रा समझ नहीं आई।", "संदर्भ प्रमाण समजले नाही."),
+    "Could not read reference price.": T("संदर्भ दाम समझ नहीं आया।", "संदर्भ किंमत समजली नाही."),
+    "Could not read the amount (try 150).": T("रकम समझ नहीं आई (जैसे 150)।", "रक्कम समजली नाही (उदा. 150)."),
+    "A note is required for minus amounts.": T("माइनस रकम के लिए कारण लिखना ज़रूरी है।", "वजा रकमेसाठी कारण लिहिणे आवश्यक आहे."),
+    "Credit needs the customer's name.": T("उधार के लिए ग्राहक का नाम चाहिए।", "उधारीसाठी ग्राहकाचे नाव हवे."),
+    "Please enter an amount.": T("कृपया रकम डालें।", "कृपया रक्कम टाका."),
+    "Could not save this entry.": T("यह एंट्री सेव नहीं हो सकी।", "ही नोंद जतन झाली नाही."),
+    "Delete this entry?": T("यह एंट्री हटाएँ?", "ही नोंद काढायची?"),
+    "Income, expense and profit will be recalculated.": T("आय, खर्च और मुनाफा फिर से गिना जाएगा।", "जमा, खर्च आणि नफा पुन्हा मोजला जाईल."),
+    "Could not delete": T("हटा नहीं सके", "काढता आले नाही"),
+    "Deleted": T("हटा दिया", "काढले"),
+    "Mark all of this credit as paid?": T("क्या पूरा उधार चुका दिया?", "पूर्ण उधारी भरली का?"),
+    "Income total stays the same; the credit book is cleared.": T("आय वही रहेगी; सिर्फ उधार खाता साफ होगा।", "जमा तीच राहील; फक्त उधारी खाते साफ होईल."),
+    "Yes, paid": T("हाँ, चुका दिया", "हो, भरले"),
+    "Yes, delete": T("हाँ, हटाएँ", "हो, काढा"),
+    "Low stock": T("कम स्टॉक", "कमी साठा"),
+    "No stock items yet.": T("अभी कोई स्टॉक आइटम नहीं।", "अजून साठ्यात वस्तू नाहीत."),
+    "Alert at": T("चेतावनी", "इशारा"),
+    "Please check": T("कृपया देखें", "कृपया तपासा"),
+    "All tracked items are above the alert level.": T("सभी चीज़ें पर्याप्त हैं।", "सर्व वस्तू पुरेशा आहेत."),
+    "Enter a quantity": T("मात्रा डालें", "प्रमाण टाका"),
+    "Not enough stock": T("स्टॉक कम है", "साठा पुरेसा नाही"),
+    "Could not use stock": T("स्टॉक इस्तेमाल नहीं हो सका", "साठा वापरता आला नाही"),
+    "Enter an amount to log the expense": T("खर्च लिखने के लिए रकम डालें", "खर्च नोंदवण्यासाठी रक्कम टाका"),
+    "Could not add stock": T("स्टॉक नहीं जुड़ सका", "साठा जोडता आला नाही"),
+    "Could not log expense": T("खर्च नहीं लिखा जा सका", "खर्च नोंदवता आला नाही"),
+    "Enter a name": T("नाम डालें", "नाव टाका"),
+    "No menu sales today.": T("आज मेनू की कोई बिक्री नहीं।", "आज मेनूची विक्री नाही."),
+    "no cost set": T("लागत नहीं डाली", "खर्च टाकलेला नाही"),
+    "Today's item profit": T("आज का आइटम मुनाफा", "आजचा वस्तू नफा"),
+    "Price": T("दाम", "किंमत"),
+    "Cost": T("लागत", "खर्च"),
+    "No staff added yet.": T("अभी कोई कर्मचारी नहीं।", "अजून कामगार नाहीत."),
+    "Owed to staff": T("कर्मचारी को देना बाकी", "कामगाराला देणे बाकी"),
+    "Staff owes": T("कर्मचारी पर बाकी", "कामगाराकडे बाकी"),
+    "Settled": T("हिसाब बराबर", "हिशोब पूर्ण"),
+    "Pay due": T("बाकी चुकाएँ", "बाकी भरा"),
+    "Daily": T("रोज़", "रोज"),
+    "Weekly": T("हफ्ता", "आठवडा"),
+    "Wages paid": T("दी गई मजदूरी", "दिलेली मजुरी"),
+    "Advance": T("एडवांस", "उचल"),
+    "Daily wage": T("रोज़ की मजदूरी", "रोजची मजुरी"),
+    "Weekly wage": T("हफ्ते की मजदूरी", "आठवड्याची मजुरी"),
+    "Enter an amount": T("रकम डालें", "रक्कम टाका"),
+    "Could not add expense": T("खर्च नहीं जुड़ सका", "खर्च जोडता आला नाही"),
+    "Could not pay": T("भुगतान नहीं हो सका", "भरता आले नाही"),
+    "Local name": T("अपनी भाषा में नाम", "आपल्या भाषेत नाव"),
+    "Making cost": T("बनाने की लागत", "बनवण्याचा खर्च"),
+    "Remove": T("हटाएँ", "काढा"),
+    "Backup downloaded": T("बैकअप डाउनलोड हुआ", "बॅकअप डाउनलोड झाला"),
+    "Restore will replace current entries. Continue?": T("रिस्टोर करने पर अभी की एंट्री बदल जाएँगी। आगे बढ़ें?", "रिस्टोर केल्यास सध्याच्या नोंदी बदलतील. पुढे जायचे?"),
+    "Backup restored": T("बैकअप वापस आया", "बॅकअप परत आला"),
+    "Could not read that file": T("यह फ़ाइल पढ़ी नहीं जा सकी", "ही फाइल वाचता आली नाही"),
+    "CSV downloaded": T("CSV डाउनलोड हुआ", "CSV डाउनलोड झाले"),
+    "marked paid": T("उधार चुका", "उधारी भरली"),
+    "Type one line first": T("पहले एक लाइन लिखें", "आधी एक ओळ लिहा"),
+    "Kadai Tracker": T("दुकान हिसाब", "दुकान हिशोब"),
+    "Today": T("आज", "आज"),
+    "Add": T("जोड़ें", "जोडा"),
+    "Add stock": T("+ स्टॉक", "+ साठा"),
+    "Sale": T("बिक्री", "विक्री"),
+    "Save": T("सेव", "जतन"),
+    "Voice not available — type the same sentence below.": T("आवाज़ उपलब्ध नहीं — वही वाक्य नीचे लिखें।", "आवाज उपलब्ध नाही — तेच वाक्य खाली लिहा."),
+    "Quick menu — tap once to add 1, long-press for qty": T("झटपट मेनू — 1 के लिए एक बार दबाएँ, मात्रा के लिए दबाकर रखें", "झटपट मेनू — 1 साठी एकदा दाबा, प्रमाणासाठी दाबून ठेवा"),
+    "Qty": T("मात्रा", "प्रमाण"),
+    "Today's entries": T("आज की एंट्री", "आजच्या नोंदी"),
+    "Credit book — who still owes": T("उधार खाता — किसका बाकी है", "उधारी खाते — कोणाची बाकी आहे"),
+    "Share to WhatsApp": T("व्हाट्सऐप पर भेजें", "व्हॉट्सॲपवर पाठवा"),
+    "Download CSV for Excel": T("Excel के लिए CSV डाउनलोड", "Excel साठी CSV डाउनलोड"),
+    "Stock": T("स्टॉक", "साठा"),
+    "Margins": T("मुनाफा", "नफा"),
+    "Staff": T("कर्मचारी", "कामगार"),
+    "Stock on hand": T("मौजूद स्टॉक", "उपलब्ध साठा"),
+    "Use": T("इस्तेमाल", "वापरा"),
+    "New item": T("+ चीज़", "+ वस्तू"),
+    "Item": T("चीज़", "वस्तू"),
+    "Amount (₹)": T("रकम (₹)", "रक्कम (₹)"),
+    "Also log as an expense": T("खर्च में भी लिखें", "खर्चातही नोंदवा"),
+    "Cancel": T("रहने दें", "रद्द करा"),
+    "Tamil name": T("अपनी भाषा में नाम", "आपल्या भाषेत नाव"),
+    "English name": T("अंग्रेज़ी नाम", "इंग्रजी नाव"),
+    "Unit": T("इकाई", "एकक"),
+    "Low-stock at": T("कम स्टॉक सीमा", "कमी साठा मर्यादा"),
+    "Low-stock alerts": T("कम स्टॉक चेतावनी", "कमी साठा इशारा"),
+    "Today's profit from sales (after ingredient cost)": T("आज की बिक्री से मुनाफा (सामान की लागत के बाद)", "आजच्या विक्रीतून नफा (मालाच्या खर्चानंतर)"),
+    "Set making cost per item, then see unit profit": T("हर चीज़ की लागत डालें, फिर एक का मुनाफा देखें", "प्रत्येक वस्तूचा खर्च टाका, मग एकाचा नफा पहा"),
+    "Save costs": T("लागत सेव करें", "खर्च जतन करा"),
+    "Staff wages — paid wages and advances count as expenses": T("कर्मचारी मजदूरी — दी गई मजदूरी और एडवांस खर्च में गिने जाते हैं", "कामगार मजुरी — दिलेली मजुरी आणि उचल खर्चात धरली जाते"),
+    "Add staff": T("+ कर्मचारी", "+ कामगार"),
+    "Name": T("नाम", "नाव"),
+    "Daily wage (₹)": T("रोज़ की मजदूरी (₹)", "रोजची मजुरी (₹)"),
+    "Weekly wage (₹)": T("हफ्ते की मजदूरी (₹)", "आठवड्याची मजुरी (₹)"),
+    "Paid now (counts as expense)": T("अभी दिया (खर्च में गिना जाएगा)", "आत्ता दिले (खर्चात धरले जाईल)"),
+    "Typing is the main path. Voice is extra. Data stays on this phone.": T("लिखना मुख्य तरीका है। आवाज़ अतिरिक्त है। डेटा इसी फोन में रहता है।", "लिहिणे हा मुख्य मार्ग. आवाज अतिरिक्त. माहिती याच फोनमध्ये राहते."),
+    "Shop": T("दुकान", "दुकान"),
+    "Summary": T("हिसाब", "हिशोब"),
+    "Does this look right?": T("क्या यह सही है?", "हे बरोबर आहे का?"),
+    "Sentence — edit if misheard": T("वाक्य — गलत सुना हो तो बदलें", "वाक्य — चुकीचे ऐकले असल्यास बदला"),
+    "Item / details": T("चीज़ / विवरण", "वस्तू / तपशील"),
+    "Quantity": T("मात्रा", "प्रमाण"),
+    "Unit price": T("एक का दाम", "एकाची किंमत"),
+    "Total amount (₹)": T("कुल रकम (₹)", "एकूण रक्कम (₹)"),
+    "Bulk rate (e.g. 10 kg = ₹100)": T("थोक दर (जैसे 10 किलो = ₹100)", "घाऊक दर (उदा. 10 किलो = ₹100)"),
+    "Reference qty": T("संदर्भ मात्रा", "संदर्भ प्रमाण"),
+    "Price for that qty": T("उस मात्रा का दाम", "त्या प्रमाणाची किंमत"),
+    "10 kg = ₹100 → 3 kg becomes ₹30.": T("10 किलो = ₹100 → 3 किलो = ₹30।", "10 किलो = ₹100 → 3 किलो = ₹30."),
+    "Vehicle number": T("गाड़ी नंबर", "गाडी नंबर"),
+    "Note / reason": T("नोट / कारण", "टीप / कारण"),
+    "A note is required for minus adjustments.": T("माइनस समायोजन के लिए नोट ज़रूरी है।", "वजा समायोजनासाठी टीप आवश्यक आहे."),
+    "More — bulk rate, vehicle, adjustment": T("और — थोक दर, गाड़ी, समायोजन", "अधिक — घाऊक दर, गाडी, समायोजन"),
+    "Payment mode": T("भुगतान का तरीका", "पैसे देण्याची पद्धत"),
+    "No, keep it": T("नहीं, रहने दें", "नको, राहू द्या"),
+    "Settings": T("सेटिंग्स", "सेटिंग्ज"),
+    "Language": T("भाषा", "भाषा"),
+    "Shop name": T("दुकान का नाम", "दुकानाचे नाव"),
+    "Menu prices (editable)": T("मेनू के दाम (बदल सकते हैं)", "मेनूच्या किमती (बदलता येतात)"),
+    "These prices are used when you tap a menu button. Making cost (for item profit) can also be set on the Shop → Margins tab.": T("मेनू बटन दबाने पर यही दाम लगते हैं। लागत दुकान → मुनाफा में भी डाल सकते हैं।", "मेनू बटण दाबल्यावर याच किमती लागतात. खर्च दुकान → नफा येथेही टाकता येतो."),
+    "+ Menu item": T("+ मेनू आइटम", "+ मेनू वस्तू"),
+    "Save settings": T("सेटिंग्स सेव करें", "सेटिंग्ज जतन करा"),
+    "Backup": T("बैकअप", "बॅकअप"),
+    "Entries stay on this phone. Export a backup before changing phones.": T("एंट्री इसी फोन में रहती हैं। फोन बदलने से पहले बैकअप लें।", "नोंदी याच फोनमध्ये राहतात. फोन बदलण्यापूर्वी बॅकअप घ्या."),
+    "Download backup (JSON)": T("बैकअप डाउनलोड (JSON)", "बॅकअप डाउनलोड (JSON)"),
+    "Restore backup": T("बैकअप वापस लाएँ", "बॅकअप परत आणा"),
+    "Undo": T("वापस", "परत"),
+    "Date": T("तारीख", "तारीख"),
+    "Today's totals": T("आज का कुल", "आजची एकूण"),
+    "Voice": T("आवाज़", "आवाज"),
+    "Add sale or expense": T("बिक्री या खर्च जोड़ें", "विक्री किंवा खर्च जोडा"),
+    "Close": T("बंद करें", "बंद करा"),
+    "This week": T("इस हफ्ते", "या आठवड्यात"),
+    "This month": T("इस महीने", "या महिन्यात")
+  };
+  const api = { DICT };
+  root.KadaiI18n = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+  <script>
+/* built by node build.js — edit i18n.js / logic.js / app.js, not this file */
 /**
  * Kadai Tracker — shared ledger + Tamil number logic.
  * Works in the browser (via KadaiLogic) and in Node tests (module.exports).
@@ -1126,7 +1386,78 @@
     ["irandaayiram", 2000, "thousand"],
     ["moonaayiram", 3000, "thousand"],
     ["anjuayiram", 5000, "thousand"],
-    ["arai", 0.5, "fraction"]
+    ["arai", 0.5, "fraction"],
+
+    // v7: Tamil compound tens-of-thousands + colloquial / Tirunelveli forms
+    ["தொண்ணூறாயிரத்து", 90000, "thousand"], ["தொண்ணூறாயிரம்", 90000, "thousand"],
+    ["எண்பதாயிரத்து", 80000, "thousand"], ["எண்பதாயிரம்", 80000, "thousand"], ["எம்பதாயிரம்", 80000, "thousand"],
+    ["எழுபதாயிரத்து", 70000, "thousand"], ["எழுபதாயிரம்", 70000, "thousand"], ["எழுவதாயிரம்", 70000, "thousand"],
+    ["அறுபதாயிரத்து", 60000, "thousand"], ["அறுபதாயிரம்", 60000, "thousand"], ["அறுவதாயிரம்", 60000, "thousand"],
+    ["ஐம்பதாயிரத்து", 50000, "thousand"], ["ஐம்பதாயிரம்", 50000, "thousand"], ["அம்பதாயிரத்து", 50000, "thousand"], ["அம்பதாயிரம்", 50000, "thousand"],
+    ["நாற்பதாயிரத்து", 40000, "thousand"], ["நாற்பதாயிரம்", 40000, "thousand"], ["நாப்பதாயிரம்", 40000, "thousand"],
+    ["முப்பதாயிரத்து", 30000, "thousand"], ["முப்பதாயிரம்", 30000, "thousand"],
+    ["இருபதாயிரத்து", 20000, "thousand"], ["இருபதாயிரம்", 20000, "thousand"], ["இருவதாயிரம்", 20000, "thousand"],
+    ["இருபத்தஞ்சாயிரம்", 25000, "thousand"], ["இருபத்தைந்தாயிரம்", 25000, "thousand"],
+    ["பதினைந்தாயிரம்", 15000, "thousand"], ["பதினஞ்சாயிரம்", 15000, "thousand"],
+    ["பன்னிரண்டாயிரம்", 12000, "thousand"],
+    ["பத்தாயிரத்து", 10000, "thousand"], ["பத்தாயிரம்", 10000, "thousand"],
+    ["லெட்சம்", 1e5, "lakh"], ["லச்சம்", 1e5, "lakh"], ["லெச்சம்", 1e5, "lakh"],
+    ["நூத்தம்பது", 150, "hundred"], ["நூத்தியம்பது", 150, "hundred"],
+    ["அஞ்ஞூறு", 500, "hundred"], ["அஞ்சுநூறு", 500, "hundred"], ["எரநூறு", 200, "hundred"], ["எறநூறு", 200, "hundred"],
+    ["தொன்னூறு", 90, "ten"], ["தொன்னூத்தி", 90, "tensprefix"],
+    ["எம்பது", 80, "ten"], ["எம்பத்தி", 80, "tensprefix"],
+    ["எழுவது", 70, "ten"], ["எழுவத்தி", 70, "tensprefix"],
+    ["அறுவது", 60, "ten"], ["அறுவத்தி", 60, "tensprefix"],
+    ["அம்பது", 50, "ten"], ["அம்பத்தி", 50, "tensprefix"], ["அம்பத்து", 50, "tensprefix"],
+    ["நாப்பது", 40, "ten"], ["நாப்பத்தி", 40, "tensprefix"],
+    ["முப்பத்தஞ்சு", 35, "ones"], ["இருபத்தஞ்சு", 25, "ones"], ["இருவத்தஞ்சு", 25, "ones"],
+    ["இருவது", 20, "ten"], ["இருவத்தி", 20, "tensprefix"],
+    ["ஒன்றரை", 1.5, "fraction"], ["ஒன்னரை", 1.5, "fraction"], ["ரெண்டரை", 2.5, "fraction"],
+    // Tanglish extras
+    ["irubadhayiram", 20000, "thousand"], ["irupathayiram", 20000, "thousand"], ["iruvadhayiram", 20000, "thousand"], ["iruvathayiram", 20000, "thousand"],
+    ["muppadhayiram", 30000, "thousand"], ["muppathayiram", 30000, "thousand"],
+    ["naarpadhayiram", 40000, "thousand"], ["naappadhayiram", 40000, "thousand"],
+    ["aimbadhayiram", 50000, "thousand"], ["ambadhayiram", 50000, "thousand"], ["ambathayiram", 50000, "thousand"],
+    ["pathayiram", 10000, "thousand"], ["paththayiram", 10000, "thousand"], ["pathaayiram", 10000, "thousand"],
+    ["ambadhu", 50, "ten"], ["ambathu", 50, "ten"], ["ambathi", 50, "tensprefix"],
+    ["naappathu", 40, "ten"], ["naapathu", 40, "ten"],
+    ["iruvadhu", 20, "ten"],
+    ["laksham", 1e5, "lakh"], ["latcham", 1e5, "lakh"], ["lacham", 1e5, "lakh"], ["letcham", 1e5, "lakh"],
+
+    // v7: Hindi (Devanagari, nukta removed before matching)
+    ["दो सौ", 200, "hundred"], ["दो हजार", 2000, "thousand"], ["दो लाख", 2e5, "lakh"],
+    ["करोड", 1e7, "crore"], ["लाख", 1e5, "lakh"], ["हजार", 1000, "thousand"], ["सौ", 100, "hundred"],
+    ["नब्बे", 90, "ten"], ["पचासी", 85, "ones"], ["अस्सी", 80, "ten"], ["पचहत्तर", 75, "ones"], ["सत्तर", 70, "ten"],
+    ["पैंसठ", 65, "ones"], ["साठ", 60, "ten"], ["पचपन", 55, "ones"], ["पचास", 50, "ten"], ["पैंतालीस", 45, "ones"],
+    ["चालीस", 40, "ten"], ["पैंतीस", 35, "ones"], ["तीस", 30, "ten"], ["पच्चीस", 25, "ones"], ["बीस", 20, "ten"],
+    ["उन्नीस", 19, "ones"], ["अठारह", 18, "ones"], ["सत्रह", 17, "ones"], ["सोलह", 16, "ones"], ["पंद्रह", 15, "ones"], ["पन्द्रह", 15, "ones"],
+    ["चौदह", 14, "ones"], ["तेरह", 13, "ones"], ["बारह", 12, "ones"], ["ग्यारह", 11, "ones"], ["दस", 10, "ten"],
+    ["नौ", 9, "ones"], ["आठ", 8, "ones"], ["सात", 7, "ones"], ["छह", 6, "ones"], ["छः", 6, "ones"], ["पांच", 5, "ones"],
+    ["चार", 4, "ones"], ["तीन", 3, "ones"], ["एक", 1, "ones"],
+    ["डेढ", 1.5, "fraction"], ["ढाई", 2.5, "fraction"], ["सवा", 1.25, "fraction"],
+    // v7: Marathi
+    ["कोटी", 1e7, "crore"], ["हजार", 1000, "thousand"],
+    ["नऊशे", 900, "hundred"], ["आठशे", 800, "hundred"], ["सातशे", 700, "hundred"], ["सहाशे", 600, "hundred"], ["पाचशे", 500, "hundred"],
+    ["चारशे", 400, "hundred"], ["तीनशे", 300, "hundred"], ["दोनशे", 200, "hundred"], ["अडीचशे", 250, "hundred"], ["दीडशे", 150, "hundred"],
+    ["शंभर", 100, "hundred"], ["नव्वद", 90, "ten"], ["ऐंशी", 80, "ten"], ["पंच्याहत्तर", 75, "ones"], ["पासष्ट", 65, "ones"],
+    ["पंचावन्न", 55, "ones"], ["पन्नास", 50, "ten"], ["पंचेचाळीस", 45, "ones"], ["चाळीस", 40, "ten"], ["पस्तीस", 35, "ones"],
+    ["पंचवीस", 25, "ones"], ["वीस", 20, "ten"], ["एकोणीस", 19, "ones"], ["अठरा", 18, "ones"], ["सतरा", 17, "ones"], ["सोळा", 16, "ones"],
+    ["पंधरा", 15, "ones"], ["चौदा", 14, "ones"], ["तेरा", 13, "ones"], ["बारा", 12, "ones"], ["अकरा", 11, "ones"], ["दहा", 10, "ten"],
+    ["नऊ", 9, "ones"], ["सहा", 6, "ones"], ["पाच", 5, "ones"], ["दोन", 2, "ones"],
+    ["दीड", 1.5, "fraction"], ["अडीच", 2.5, "fraction"],
+    // v7: Hinglish / Marathi romanized
+    ["do sau", 200, "hundred"], ["do hazaar", 2000, "thousand"], ["do hazar", 2000, "thousand"], ["do hajar", 2000, "thousand"], ["do lakh", 2e5, "lakh"],
+    ["karod", 1e7, "crore"], ["lac", 1e5, "lakh"], ["laakh", 1e5, "lakh"],
+    ["hazaar", 1000, "thousand"], ["hazar", 1000, "thousand"], ["hajaar", 1000, "thousand"], ["hajar", 1000, "thousand"],
+    ["sau", 100, "hundred"], ["shambhar", 100, "hundred"], ["shambar", 100, "hundred"],
+    ["donshe", 200, "hundred"], ["teenshe", 300, "hundred"], ["paachshe", 500, "hundred"], ["pachshe", 500, "hundred"],
+    ["nabbe", 90, "ten"], ["navvad", 90, "ten"], ["assi", 80, "ten"], ["sattar", 70, "ten"], ["saath", 60, "ten"],
+    ["pachaas", 50, "ten"], ["pachas", 50, "ten"], ["pannas", 50, "ten"], ["chaalis", 40, "ten"], ["chalis", 40, "ten"], ["chalees", 40, "ten"],
+    ["tees", 30, "ten"], ["pachchees", 25, "ones"], ["pachees", 25, "ones"], ["pachis", 25, "ones"], ["panchvees", 25, "ones"],
+    ["bees", 20, "ten"], ["vees", 20, "ten"], ["pandrah", 15, "ones"], ["pandhra", 15, "ones"], ["barah", 12, "ones"], ["gyarah", 11, "ones"],
+    ["daha", 10, "ten"], ["das", 10, "ten"], ["nau", 9, "ones"], ["aath", 8, "ones"], ["saat", 7, "ones"], ["chhah", 6, "ones"], ["chhe", 6, "ones"], ["saha", 6, "ones"],
+    ["paanch", 5, "ones"], ["panch", 5, "ones"], ["paach", 5, "ones"], ["chaar", 4, "ones"], ["char", 4, "ones"], ["teen", 3, "ones"], ["don", 2, "ones"], ["ek", 1, "ones"],
+    ["dedh", 1.5, "fraction"], ["dhai", 2.5, "fraction"], ["adich", 2.5, "fraction"], ["deed", 1.5, "fraction"]
   ];
 
   // Sort longest word first for greedy match
@@ -1144,11 +1475,23 @@
   ]);
 
   function normalizeDigits(str) {
-    return String(str).replace(/[௦-௯]/g, (ch) => TAMIL_DIGITS[ch] || ch);
+    return String(str)
+      .replace(/[௦-௯]/g, (ch) => TAMIL_DIGITS[ch] || ch)
+      .replace(/[०-९]/g, (ch) => String(ch.charCodeAt(0) - 0x0966));
+  }
+
+  // Devanagari spelling variants: drop nukta, precomposed nukta letters -> base,
+  // chandrabindu -> anusvara. So हज़ार / हजार and पाँच / पांच match the same word.
+  const DEVA_NUKTA_MAP = { "\u0958": "\u0915", "\u0959": "\u0916", "\u095A": "\u0917", "\u095B": "\u091C", "\u095C": "\u0921", "\u095D": "\u0922", "\u095E": "\u092B", "\u095F": "\u092F" };
+  function normalizeDeva(str) {
+    return String(str)
+      .replace(/[\u0958-\u095F]/g, (ch) => DEVA_NUKTA_MAP[ch] || ch)
+      .replace(/\u093C/g, "")
+      .replace(/\u0901/g, "\u0902");
   }
 
   function stripNoise(raw) {
-    let s = normalizeDigits(String(raw || "")).trim();
+    let s = normalizeDeva(normalizeDigits(String(raw || ""))).trim();
     s = s.replace(/[₹]/g, " ");
     s = s.replace(/ரூ\.?/g, " ");
     s = s.replace(/rs\.?/gi, " ");
@@ -1159,6 +1502,8 @@
     s = s.replace(/\s+/g, " ").trim();
     return s;
   }
+
+  const DEVA_SUFFIXES = new Set(["ला", "चा", "ची", "चे", "च्या", "ने", "ही", "मध्ये", "वर", "नी", "को", "का", "की", "के", "से", "में"]);
 
   function tokenize(s) {
     const tokens = [];
@@ -1207,6 +1552,14 @@
           // Don't match latin word mid-token (e.g. "ten" in "tender")
           if (word[0] <= "z" && nextCh && /[a-zA-Z]/.test(nextCh)) {
             continue;
+          }
+          // Devanagari: "एक" must not match inside "एकदम". Allow inflection
+          // (vowel sign / virama right after) or a short case suffix (शंभरला, हजाराचे).
+          if (/[\u0900-\u097F]/.test(word[0]) && nextCh && /[\u0900-\u097F]/.test(nextCh) && !/[\u093E-\u094D]/.test(nextCh)) {
+            let k = after;
+            while (k < lower.length && /[\u0900-\u097F]/.test(lower[k])) k += 1;
+            const tail = lower.slice(after, k);
+            if (!DEVA_SUFFIXES.has(tail)) continue;
           }
           tokens.push({ kind, value, raw: w });
           i = after;
@@ -1762,32 +2115,32 @@
   }
 
   const UNIT_ALIASES = [
-    { names: ["கிலோகிராம்", "கிலோ", "kilograms", "kilogram", "kilos", "kilo", "kgs", "kg"], unit: "கிலோ", en: "kg" },
+    { names: ["கிலோகிராம்", "கிலோ", "kilograms", "kilogram", "kilos", "kilo", "kgs", "kg", "किलो"], unit: "கிலோ", en: "kg" },
     { names: ["கிராம்", "grams", "gram", "gms", "gm"], unit: "கிராம்", en: "gram" },
-    { names: ["லிட்டர்", "liters", "litres", "liter", "litre", "ltr"], unit: "லிட்டர்", en: "litre" },
-    { names: ["கிளாஸ்", "glasses", "glass", "tumbler", "டம்ளர்", "cup", "cups"], unit: "கிளாஸ்", en: "glass" },
+    { names: ["லிட்டர்", "liters", "litres", "liter", "litre", "ltr", "लीटर", "लिटर"], unit: "லிட்டர்", en: "litre" },
+    { names: ["கிளாஸ்", "glasses", "glass", "tumbler", "டம்ளர்", "cup", "cups", "ग्लास", "कप"], unit: "கிளாஸ்", en: "glass" },
     { names: ["பொட்டலம்", "packets", "packet", "packt", "pck"], unit: "பொட்டலம்", en: "packet" },
     { names: ["மூட்டை", "bags", "bag"], unit: "மூட்டை", en: "bag" },
     { names: ["சிலிண்டர்", "cylinders", "cylinder"], unit: "சிலிண்டர்", en: "cylinder" },
-    { names: ["பிளேட்", "plates", "plate"], unit: "பிளேட்", en: "plate" },
+    { names: ["பிளேட்", "plates", "plate", "प्लेट"], unit: "பிளேட்", en: "plate" },
     { names: ["எண்ணிக்கை", "pieces", "piece", "nos", "number"], unit: "எண்ணிக்கை", en: "pcs" }
   ];
 
   const EXPENSE_ITEMS = [
-    { names: ["தக்காளி", "takkaali", "thakkali", "thakkaali", "thakkali", "tomato", "tomatoes"], nameTa: "தக்காளி", nameEn: "Tomato" },
-    { names: ["வெங்காயம்", "vengayam", "venkayam", "onion", "onions"], nameTa: "வெங்காயம்", nameEn: "Onion" },
-    { names: ["மாவு", "maavu", "maavu", "flour", "atta"], nameTa: "மாவு", nameEn: "Flour" },
-    { names: ["டீசல்", "diesel"], nameTa: "டீசல்", nameEn: "Diesel" },
-    { names: ["பெட்ரோல்", "petrol"], nameTa: "பெட்ரோல்", nameEn: "Petrol" },
-    { names: ["வாயு சிலிண்டர்", "gas cylinder", "சிலிண்டர்", "cylinder", "வாயு", "gas"], nameTa: "வாயு சிலிண்டர்", nameEn: "Gas cylinder" },
-    { names: ["அரிசி", "arisi", "rice"], nameTa: "அரிசி", nameEn: "Rice" },
-    { names: ["உளுந்து", "ulundhu", "ulundu"], nameTa: "உளுந்து", nameEn: "Urad dal" },
-    { names: ["எண்ணெய்", "ennai", "oil"], nameTa: "எண்ணெய்", nameEn: "Oil" },
-    { names: ["சீனி", "seeni", "sugar"], nameTa: "சீனி", nameEn: "Sugar" },
-    { names: ["காய்கறி", "kaaykari", "vegetable", "vegetables"], nameTa: "காய்கறி", nameEn: "Vegetables" },
-    { names: ["பால்", "paal", "paal", "milk"], nameTa: "பால்", nameEn: "Milk", ambiguous: true },
-    { names: ["வாடகை", "vaadagai", "rent"], nameTa: "வாடகை", nameEn: "Rent" },
-    { names: ["தண்ணீர்", "thanneer", "water"], nameTa: "தண்ணீர்", nameEn: "Water" }
+    { names: ["தக்காளி", "takkaali", "thakkali", "thakkaali", "thakkali", "tomato", "tomatoes", "टमाटर", "टोमॅटो", "टोमाटो", "tamatar", "tamaatar"], nameTa: "தக்காளி", nameEn: "Tomato" },
+    { names: ["வெங்காயம்", "vengayam", "venkayam", "onion", "onions", "प्याज", "कांदा", "कांदे", "pyaz", "pyaaz", "pyaj", "kanda"], nameTa: "வெங்காயம்", nameEn: "Onion" },
+    { names: ["மாவு", "maavu", "maavu", "flour", "atta", "आटा", "पीठ", "aata"], nameTa: "மாவு", nameEn: "Flour" },
+    { names: ["டீசல்", "diesel", "डीजल", "डिझेल", "डीझेल"], nameTa: "டீசல்", nameEn: "Diesel" },
+    { names: ["பெட்ரோல்", "petrol", "पेट्रोल"], nameTa: "பெட்ரோல்", nameEn: "Petrol" },
+    { names: ["வாயு சிலிண்டர்", "gas cylinder", "சிலிண்டர்", "cylinder", "வாயு", "gas", "கேஸ்", "गैस", "गॅस", "सिलेंडर", "सिलिंडर"], nameTa: "வாயு சிலிண்டர்", nameEn: "Gas cylinder" },
+    { names: ["அரிசி", "arisi", "rice", "चावल", "तांदूळ", "तांदुळ", "chawal", "chaawal", "tandul"], nameTa: "அரிசி", nameEn: "Rice" },
+    { names: ["உளுந்து", "ulundhu", "ulundu", "उडद", "उडीद", "urad"], nameTa: "உளுந்து", nameEn: "Urad dal" },
+    { names: ["எண்ணெய்", "ennai", "oil", "तेल"], nameTa: "எண்ணெய்", nameEn: "Oil" },
+    { names: ["சீனி", "seeni", "sugar", "चीनी", "शक्कर", "साखर", "cheeni", "chini", "shakkar", "sakhar"], nameTa: "சீனி", nameEn: "Sugar" },
+    { names: ["காய்கறி", "kaaykari", "vegetable", "vegetables", "सब्जी", "भाजी", "sabzi", "sabji", "subzi"], nameTa: "காய்கறி", nameEn: "Vegetables" },
+    { names: ["பால்", "paal", "paal", "milk", "दूध", "दुध", "doodh", "dudh"], nameTa: "பால்", nameEn: "Milk", ambiguous: true },
+    { names: ["வாடகை", "vaadagai", "rent", "किराया", "भाडे", "भाड़ा", "kiraya", "kiraaya", "bhade"], nameTa: "வாடகை", nameEn: "Rent" },
+    { names: ["தண்ணீர்", "thanneer", "water", "पानी", "पाणी", "paani"], nameTa: "தண்ணீர்", nameEn: "Water" }
   ];
 
   const TYPE_EXPENSE_RE = /(?:செலவு|selavu|selavu|expense|expenses|vaangunadhu|vaangunaathu|vaangunathu|vaanguna|vaanginen|vaangitten|வாங்குனது|வாங்கினேன்|வாங்கியது|வாங்கினது|spent|purchase|kharcha|கர்ச்சு)/i;
@@ -1831,12 +2184,12 @@
     const list = [];
     const src = menu && menu.length ? menu : defaultMenu();
     const extras = {
-      dosa: ["தோசை", "dosai", "thosai", "thosa", "dose", "dosai"],
-      idli: ["இட்லி", "இட்ளி", "idly", "itli", "iddly", "iddli", "idlee"],
-      tea: ["டீ", "தேநீர்", "tee", "chaya", "chaaya", "chai", "saya", "சாய்"],
-      coffee: ["காபி", "கோபி", "kaapi", "kapi", "kopi", "cafe", "kofi"],
-      vada: ["வடை", "vadai", "wada", "vadai"],
-      pongal: ["பொங்கல்", "pongal", "ven pongal", "venpongal"]
+      dosa: ["தோசை", "dosai", "thosai", "thosa", "dose", "dosai", "डोसा", "दोसा", "डोसे", "dhosa"],
+      idli: ["இட்லி", "இட்ளி", "idly", "itli", "iddly", "iddli", "idlee", "इडली", "इडली", "इटली", "idali"],
+      tea: ["டீ", "தேநீர்", "tee", "chaya", "chaaya", "chai", "saya", "சாய்", "चाय", "चहा", "chay", "chaay", "chaha"],
+      coffee: ["காபி", "கோபி", "kaapi", "kapi", "kopi", "cafe", "kofi", "कॉफी", "कोफी", "काफी", "कॉफ़ी", "kaafi"],
+      vada: ["வடை", "vadai", "wada", "vadai", "वडा", "वडे"],
+      pongal: ["பொங்கல்", "pongal", "ven pongal", "venpongal", "पोंगल"]
     };
     for (const m of src) {
       const names = [m.nameTa, m.nameEn, m.id].filter(Boolean);
@@ -1855,25 +2208,44 @@
     while (i < s.length) {
       if (/\s/.test(s[i])) { i += 1; continue; }
       // digits
-      if (/[0-9௦-௯]/.test(s[i]) || (s[i] === "-" && i + 1 < s.length && /[0-9]/.test(s[i + 1]))) {
+      if (/[0-9௦-௯०-९]/.test(s[i]) || (s[i] === "-" && i + 1 < s.length && /[0-9]/.test(s[i + 1]))) {
         let j = i + (s[i] === "-" ? 1 : 0);
-        while (j < s.length && /[0-9௦-௯.,]/.test(s[j])) j += 1;
-        const n = parseTamilNumber(s.slice(i, j));
-        if (n != null) tokens.push({ value: n, start: i, end: j, raw: s.slice(i, j) });
-        i = j;
+        while (j < s.length && /[0-9௦-௯०-९.,]/.test(s[j])) j += 1;
+        // trailing "." or "," is punctuation, not part of the number
+        while (j > i + 1 && /[.,]/.test(s[j - 1])) j -= 1;
+        let n = parseTamilNumber(s.slice(i, j));
+        let end = j;
+        // "20 हजार" / "5 ஆயிரம்" / "20 thousand" / "20k": digits followed by a scale word
+        const after = s.slice(j);
+        const kMatch = after.match(/^\s*k\b/i);
+        if (n != null && kMatch) {
+          n = n * 1000;
+          end = j + kMatch[0].length;
+        } else if (n != null) {
+          const w = after.match(/^\s*([A-Za-z\u0B80-\u0BFF\u0900-\u097F]+)/);
+          if (w) {
+            const toks = tokenize(stripNoise(w[1]));
+            if (toks.length === 1 && /^(hundred|thousand|lakh|crore)$/.test(toks[0].kind) && toks[0].value <= 1e7 && [100, 1000, 1e5, 1e7].indexOf(toks[0].value) !== -1) {
+              n = n * toks[0].value;
+              end = j + w[0].length;
+            }
+          }
+        }
+        if (n != null) tokens.push({ value: n, start: i, end: end, raw: s.slice(i, end) });
+        i = end;
         continue;
       }
       // Try to parse a number-word sequence from here
       let j = i;
       // consume letters (latin or tamil)
-      while (j < s.length && /[A-Za-z\u0B80-\u0BFF]/.test(s[j])) j += 1;
+      while (j < s.length && /[A-Za-z\u0B80-\u0BFF\u0900-\u097F]/.test(s[j])) j += 1;
       // extend over following number words (nooru aimbadhu)
       let end = j;
       let k = j;
       while (k < s.length) {
         if (/\s/.test(s[k])) { k += 1; continue; }
         let p = k;
-        while (p < s.length && /[A-Za-z\u0B80-\u0BFF]/.test(s[p])) p += 1;
+        while (p < s.length && /[A-Za-z\u0B80-\u0BFF\u0900-\u097F]/.test(s[p])) p += 1;
         if (p === k) break;
         const piece = s.slice(k, p);
         if (parseTamilNumber(piece) != null) {
@@ -1885,7 +2257,7 @@
       }
       const chunk = s.slice(i, end);
       const n = parseTamilNumber(chunk);
-      if (n != null && /[A-Za-z\u0B80-\u0BFF]/.test(chunk)) {
+      if (n != null && /[A-Za-z\u0B80-\u0BFF\u0900-\u097F]/.test(chunk)) {
         tokens.push({ value: n, start: i, end: end, raw: chunk });
         i = end;
         continue;
@@ -2471,31 +2843,45 @@
     const messages = {
       "no-speech": {
         ta: "ஒன்றும் கேட்கவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Nothing was heard. Please type instead."
+        en: "Nothing was heard. Please type instead.",
+        hi: "कुछ सुनाई नहीं दिया। टाइप कर दीजिए।",
+        mr: "काहीच ऐकू आले नाही. टाइप करा."
       },
       "not-allowed": {
         ta: "மைக் அனுமதி மறுக்கப்பட்டது. அமைப்புகளில் அனுமதித்து மீண்டும் முயலவும், அல்லது தட்டச்சு செய்யுங்கள்.",
-        en: "Mic permission denied. Allow the mic in settings, or type instead."
+        en: "Mic permission denied. Allow the mic in settings, or type instead.",
+        hi: "माइक की अनुमति नहीं मिली। सेटिंग में माइक चालू करें, या टाइप करें।",
+        mr: "माइकची परवानगी नाही. सेटिंगमध्ये माइक चालू करा, किंवा टाइप करा."
       },
       "network": {
         ta: "இணையம் இல்லை. குரல் இணையம் வேண்டும் — தட்டச்சு செய்யுங்கள்.",
-        en: "No network. Voice needs the internet — please type instead."
+        en: "No network. Voice needs the internet — please type instead.",
+        hi: "इंटरनेट नहीं है। आवाज़ के लिए इंटरनेट चाहिए — टाइप करें।",
+        mr: "इंटरनेट नाही. आवाजासाठी इंटरनेट लागते — टाइप करा."
       },
       "iphone": {
         ta: "iPhone / Safari-ல் குரல் வேலை செய்யாது. தட்டச்சு செய்யுங்கள்.",
-        en: "Voice does not work on iPhone/Safari. Please type instead."
+        en: "Voice does not work on iPhone/Safari. Please type instead.",
+        hi: "iPhone / Safari में आवाज़ काम नहीं करती। टाइप करें।",
+        mr: "iPhone / Safari मध्ये आवाज चालत नाही. टाइप करा."
       },
       "unsupported": {
         ta: "இந்த உலாவியில் குரல் இல்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Voice is not supported in this browser. Please type instead."
+        en: "Voice is not supported in this browser. Please type instead.",
+        hi: "इस ब्राउज़र में आवाज़ नहीं है। टाइप करें।",
+        mr: "या ब्राउझरमध्ये आवाज नाही. टाइप करा."
       },
       "audio-capture": {
         ta: "மைக்கைப் பிடிக்க முடியவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Could not capture audio. Please type instead."
+        en: "Could not capture audio. Please type instead.",
+        hi: "माइक से आवाज़ नहीं मिली। टाइप करें।",
+        mr: "माइकमधून आवाज मिळाला नाही. टाइप करा."
       },
       "failed": {
         ta: "குரல் பிடிக்கவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Voice capture failed. Please type instead."
+        en: "Voice capture failed. Please type instead.",
+        hi: "आवाज़ पकड़ में नहीं आई। टाइप करें।",
+        mr: "आवाज पकडता आला नाही. टाइप करा."
       }
     };
     return messages[code] || messages.failed;
@@ -3062,11 +3448,848 @@
     };
   }
 
+
+  /* =====================================================================
+   * v7: one-shot commands — speak or type once, save directly (no confirm).
+   * parseCommand() understands Tamil, English, Hindi and Marathi (script or
+   * romanized, mixed in one sentence), several entries in one sentence, a
+   * person's name ("ரவி பேருக்கு", "Ravi ke naam", "रवीच्या नावावर"), and
+   * add / minus verbs ("போடு", "kazhi", "daalo", "वजा" …).
+   * ===================================================================== */
+
+  const CMD_INCOME_WORDS = [
+    // Tamil (prefix match on a word)
+    "போட", "போடு", "சேர்", "கூட்டு", "கூட்டி", "வரவு", "வந்தது", "வந்துச்சு", "வந்திருக்கு", "வருது", "வருகிறது",
+    "கிடைச்சது", "கிடைத்தது", "வித்தேன்", "வித்தது", "விற்றேன்", "விற்றது", "பிளஸ்",
+    // Tanglish
+    "podu", "poadu", "pottu", "podunga", "podungo", "podanum", "podu.", "ser", "serthu", "serththu", "serthuko", "kootu", "koottu", "kootti",
+    "varavu", "vandhadhu", "vanthathu", "vandhuchu", "vanthuchu", "varudhu", "varuthu", "kidaichadhu", "kidaichathu", "vithadhu", "viththen", "vithen",
+    // English
+    "add", "plus", "income", "received", "receive", "got", "sold", "earned", "credit to",
+    // Hindi
+    "jama", "jodo", "jod", "daalo", "dalo", "daal do", "dal do", "aaya", "aya", "aayi", "aaye", "aae", "mila", "mili", "mile", "becha", "bika", "bikri",
+    "जमा", "जोडो", "जोड", "डालो", "डाल दो", "डाल", "आया", "आई", "आए", "आये", "मिला", "मिली", "मिले", "बेचा", "बिका", "बिक्री",
+    // Marathi
+    "टाका", "टाक", "आले", "आली", "आला", "मिळाले", "मिळाला", "विकले", "विक्री", "taka", "taak", "aale", "aala", "milale", "vikle", "vikri"
+  ];
+  const CMD_EXPENSE_WORDS = [
+    // Tamil
+    "கழி", "செலவு", "செலவாச்சு", "போச்சு", "போனது", "போயிடுச்சு", "போய்விட்டது", "மைனஸ்", "கட்டினேன்", "கட்டியது",
+    "வாங்கினேன்", "வாங்குனேன்", "வாங்கியது", "வாங்கினது", "வாங்குனது",
+    // Tanglish
+    "kazhi", "kazhichu", "kazhikka", "kazhichidu", "kazhichudu", "kazhichen", "kalichu", "kazichu", "kazhi.",
+    "selavu", "chelavu", "selavaachu", "pochu", "pochchu", "ponadhu", "ponathu", "poyiduchu", "poyichu",
+    "kattinen", "vaanginen", "vaangunen", "vaangitten", "vaangunadhu", "vaangunaathu",
+    // English
+    "minus", "expense", "spent", "spend", "subtract", "deduct", "bought",
+    // Hindi
+    "kharcha", "kharch", "kharche", "ghatao", "ghata do", "ghatado", "gaya", "gaye", "gayi", "diya", "diye", "kam karo", "kam kar do", "bhara", "chukaya", "kharida", "khareeda",
+    "खर्चा", "खर्च", "खर्चे", "घटाओ", "घटा दो", "गया", "गए", "गये", "गई", "दिया", "दिए", "दिये", "कम करो", "कम कर दो", "भरा", "चुकाया", "खरीदा",
+    // Marathi
+    "वजा", "वजा करा", "गेले", "गेला", "गेली", "दिले", "दिला", "दिली", "भरले", "घेतले", "खरेदी",
+    "vaja", "gele", "gela", "dile", "dila", "bharle", "ghetle", "kharedi"
+  ];
+  // Words that mean the amount was a discount / refund (old "minus adjustment" path).
+  const CMD_ADJ_RE = /(?:discount|தள்ளுபடி|கழிவு|சரிகட்டு|refund|திருப்பம்|negative|adjustment|छूट|छुट|सूट|डिस्काउंट|chhoot|chhut)/i;
+  // Credit: "kadan", "udhaar", "baaki" — or "write it in X's name" (likh do / எழுது).
+  const CMD_CREDIT_RE = /(?:\bcredit\b|கடன்|கடனா|kadan|udhari|udhaar|udhar|उधार|उधारी|उसने|पाक्की|பாக்கி|baaki|baki|बाकी|\blater\b|likh do|likh lo|likho|लिख दो|लिख लो|लिखो|लिहा|लिहून ठेवा|எழுது|எழுதிக்கோ|எழுதிடு|ezhuthu|ezhudhu|ezhuthiko|ezhudhiko|khate me|khaate me|खाते में|खात्यावर|khatyavar)/i;
+  const CMD_UPI_RE = /(?:\bupi\b|யூபிஐ|यूपीआई|gpay|g pay|phonepe|phone pe|फोनपे|फ़ोनपे|paytm|पेटीएम|google\s*pay|गूगल पे|\bonline\b|ऑनलाइन|ஆன்லைன்)/i;
+  const CMD_CASH_RE = /(?:\bcash\b|கேஷ்|ரொக்கம்|नकद|नगद|कैश|रोख|\bnakad\b|\brokh\b)/i;
+  const CMD_CURRENCY_AFTER_RE = /^\s*(?:ரூவா|ரூபாய்|ரூபா|ருபாய்|ரூ\.?|rupees?|rupaye|rupaiye|rupay|rupiya|rupya|ruva|ruwa|ruvaa|rs\.?|inr|₹|रुपये|रुपए|रुपया|रुपय|रूपये|रूपए|रु\.?|पैसे|paise|bucks)(?![A-Za-z])/i;
+  const CMD_CURRENCY_BEFORE_RE = /(?:₹|(?:^|[^A-Za-z])rs\.?|(?:^|[^A-Za-z])inr|रु\.?|ரூ\.?)\s*$/i;
+
+  // Strong "in X's name" markers. Names come right before them.
+  const NAME_MARKERS = [
+    // Tamil / Tanglish
+    "பேருக்கு", "பேர்ல", "பேர்லே", "பேரில்", "பேருல", "பேர்க்கு", "பெயருக்கு", "பெயரில்", "பெயர்ல", "கணக்குல", "கணக்கில்", "கணக்குக்கு",
+    "peruku", "perukku", "perla", "perle", "perula", "peril", "peyaruku", "peyarukku", "peyaril", "kanakula", "kanakkula", "kanakkil", "kanakkuku",
+    // Hindi
+    "के नाम पर", "के नाम पे", "के नाम से", "के नाम", "के खाते में", "के खाते", "का खाता",
+    "ke naam par", "ke naam pe", "ke naam se", "ke naam", "ke nam par", "ke nam", "ke khate me", "ke khate mein", "ke khate", "ka khata", "ke account",
+    // Marathi (name usually carries च्या: "रवीच्या नावावर")
+    "च्या नावावर", "च्या नावाने", "च्या नावे", "च्या खात्यावर", "च्या खात्यात", "नावावर", "नावाने", "खात्यावर", "खात्यात",
+    "chya navavar", "chya naavavar", "chya navane", "chya khatyavar", "navavar", "naavavar", "navane", "khatyavar",
+    // English
+    "'s name", "'s account", "s name", "name", "account", "a/c"
+  ];
+  const WEAK_NAME_MARKERS = ["ka", "ki", "ke", "ko", "का", "की", "के", "को"];
+  const MARATHI_POSSESSIVE_RE = /(च्या|चे|चा|ची)$/;
+  const SEPARATOR_WORDS = [
+    "and", "um", "உம்", "அப்புறம்", "அப்றம்", "அப்பறம்", "அப்புறமா", "அடுத்து", "மேலும்", "appuram", "apram", "approm", "aprom", "aduthu",
+    "then", "also", "next", "aur", "और", "ani", "aani", "आणि", "व", "phir", "fir", "फिर", "मग", "mag", "तसेच"
+  ];
+  const LEFTOVER_STOP = new Set([
+    "ka", "ki", "ke", "ko", "ne", "se", "me", "mein", "main", "hai", "he", "tha", "liye", "wala", "wali", "paise", "paisa", "rupaye", "rupees", "rupee", "rs", "inr",
+    "aaj", "kal", "abhi", "bhai", "bhaiya", "ji", "sir", "please", "plz", "ok", "okay", "haan", "ha", "to", "for", "of", "a", "an", "the", "and", "in", "on", "at", "is", "was",
+    "it", "this", "that", "today", "now", "total", "only", "ku", "kku", "ah", "la", "le", "inniki", "innikku", "ippo", "naa", "nga", "anna", "akka", "sari", "seri",
+    "chya", "cha", "chi", "che", "sathi", "zale", "kela", "kele", "karo", "kar", "do", "de", "dena", "bhi", "ye", "yeh", "wo", "vo", "rupay", "ruva", "ruvaa", "ruwa", "rupiya",
+    "pls", "aa", "o", "ae", "ennaku", "enakku", "unakku", "please.", "with",
+    "க்கு", "கு", "இன்னிக்கு", "இன்று", "இப்போ", "இப்ப", "சரி", "அண்ணா", "அண்ணே", "அக்கா", "மொத்தம்", "ஆ", "தான்", "இந்த", "அந்த", "ரூவா", "ரூபாய்", "ரூபா", "ருபாய்", "ஓகே", "சார்",
+    "का", "की", "के", "को", "ने", "से", "में", "है", "हैं", "था", "थे", "लिए", "वाला", "वाली", "पैसे", "पैसा", "रुपये", "रुपए", "रुपया", "रूपये", "आज", "कल", "अभी", "भाई", "भैया", "जी",
+    "हां", "हा", "यह", "ये", "वो", "कुल", "सिर्फ", "करो", "कर", "दे", "दो", "देना", "भी",
+    "चा", "ची", "चे", "च्या", "ला", "मध्ये", "साठी", "काल", "आता", "भाऊ", "झाले", "केले", "करा", "एकूण", "फक्त"
+  ]);
+  const NAME_BLOCK = new Set([
+    "dukan", "dukaan", "दुकान", "ghar", "घर", "shop", "kadai", "கடை", "gaadi", "गाडी", "bijli", "बिजली", "light", "bill", "बिल", "maal", "माल",
+    "saman", "सामान", "staff", "pagar", "पगार", "salary", "sambalam", "சம்பளம்", "கரண்ட்", "current", "my", "his", "her", "our", "customer", "aadmi", "आदमी",
+    "cash", "upi", "kadan", "credit", "udhaar", "baaki", "online"
+  ]);
+  const INDIAN_STATE_CODES = /^(?:AN|AP|AR|AS|BR|CG|CH|DD|DL|DN|GA|GJ|HP|HR|JH|JK|KA|KL|LA|LD|MH|ML|MN|MP|MZ|NL|OD|OR|PB|PY|RJ|SK|TN|TR|TS|UK|UP|WB)$/i;
+  const CMD_VEHICLE_KEY_RE = /(?:vandi|vaandi|vehicle|vaahanam|gaadi|gadi|गाडी|गाड़ी|वाहन|வண்டி|வாகன(?:ம்)?(?:\s*எண்)?)\s*(?:no\.?|number|नंबर|எண்)?\s*[:\-]?\s*([A-Za-z]{2}\s*-?\s*\d{1,2}\s*-?\s*[A-Za-z]{1,3}\s*-?\s*\d{1,4})/i;
+  const CMD_VEHICLE_BARE_RE = /(^|[^A-Za-z0-9])([A-Za-z]{2})(\s*-?\s*)(\d{1,2})(\s*-?\s*)([A-Za-z]{1,3})(\s*-?\s*)(\d{1,4})(?![A-Za-z0-9])/;
+
+  const ITEM_NAMES = {
+    "இட்லி": { en: "Idli", hi: "इडली", mr: "इडली" },
+    "தோசை": { en: "Dosa", hi: "डोसा", mr: "डोसा" },
+    "மசாலா தோசை": { en: "Masala dosa", hi: "मसाला डोसा", mr: "मसाला डोसा" },
+    "வடை": { en: "Vada", hi: "वडा", mr: "वडा" },
+    "பொங்கல்": { en: "Pongal", hi: "पोंगल", mr: "पोंगल" },
+    "டீ": { en: "Tea", hi: "चाय", mr: "चहा" },
+    "காபி": { en: "Coffee", hi: "कॉफी", mr: "कॉफी" },
+    "தக்காளி": { en: "Tomato", hi: "टमाटर", mr: "टोमॅटो" },
+    "வெங்காயம்": { en: "Onion", hi: "प्याज", mr: "कांदा" },
+    "மாவு": { en: "Batter / flour", hi: "आटा / घोल", mr: "पीठ" },
+    "டீசல்": { en: "Diesel", hi: "डीजल", mr: "डिझेल" },
+    "பெட்ரோல்": { en: "Petrol", hi: "पेट्रोल", mr: "पेट्रोल" },
+    "வாயு சிலிண்டர்": { en: "Gas cylinder", hi: "गैस सिलेंडर", mr: "गॅस सिलेंडर" },
+    "அரிசி": { en: "Rice", hi: "चावल", mr: "तांदूळ" },
+    "உளுந்து": { en: "Urad dal", hi: "उड़द दाल", mr: "उडीद डाळ" },
+    "எண்ணெய்": { en: "Oil", hi: "तेल", mr: "तेल" },
+    "சீனி": { en: "Sugar", hi: "चीनी", mr: "साखर" },
+    "சக்கரை": { en: "Sugar", hi: "चीनी", mr: "साखर" },
+    "காய்கறி": { en: "Vegetables", hi: "सब्जी", mr: "भाजी" },
+    "பால்": { en: "Milk", hi: "दूध", mr: "दूध" },
+    "வாடகை": { en: "Rent", hi: "किराया", mr: "भाडे" },
+    "தண்ணீர்": { en: "Water", hi: "पानी", mr: "पाणी" },
+    "டீ தூள்": { en: "Tea powder", hi: "चाय पत्ती", mr: "चहा पावडर" },
+    "gas": { en: "Gas", hi: "गैस", mr: "गॅस" },
+    "வரவு": { en: "Income", hi: "आमदनी", mr: "जमा" },
+    "செலவு": { en: "Expense", hi: "खर्च", mr: "खर्च" },
+    "சரிகட்டு": { en: "Adjustment", hi: "समायोजन", mr: "समायोजन" },
+    "பிற": { en: "Other", hi: "अन्य", mr: "इतर" },
+    "கூலி": { en: "Wages", hi: "मजदूरी", mr: "पगार" },
+    "முன்பணம்": { en: "Advance", hi: "एडवांस", mr: "आगाऊ" }
+  };
+
+  /** Show a stored Tamil item name in the chosen language (unknown names pass through). */
+  function itemLabel(item, lang) {
+    const raw = String(item || "");
+    if (!lang || lang === "ta") return raw;
+    const row = ITEM_NAMES[raw.trim()];
+    if (row) return row[lang] || row.en || raw;
+    // A wage entry: "கூலி — Murugan"
+    const m = raw.match(/^(கூலி|முன்பணம்)(\s*[—-]\s*.*)$/);
+    if (m && ITEM_NAMES[m[1]]) return (ITEM_NAMES[m[1]][lang] || ITEM_NAMES[m[1]].en) + m[2];
+    return raw;
+  }
+
+  const UNIT_NAMES = {
+    "கிலோ": { en: "kg", hi: "किलो", mr: "किलो" },
+    "கிராம்": { en: "gram", hi: "ग्राम", mr: "ग्रॅम" },
+    "லிட்டர்": { en: "litre", hi: "लीटर", mr: "लिटर" },
+    "கிளாஸ்": { en: "glass", hi: "गिलास", mr: "ग्लास" },
+    "பொட்டலம்": { en: "packet", hi: "पैकेट", mr: "पाकीट" },
+    "எண்ணிக்கை": { en: "pcs", hi: "नग", mr: "नग" },
+    "மூட்டை": { en: "bag", hi: "बोरी", mr: "पोते" },
+    "சிலிண்டர்": { en: "cylinder", hi: "सिलेंडर", mr: "सिलेंडर" },
+    "பிளேட்": { en: "plate", hi: "प्लेट", mr: "प्लेट" }
+  };
+  /** Stored Tamil unit → label in the chosen language. */
+  function unitLabel(unit, lang) {
+    const raw = String(unit || "");
+    if (!lang || lang === "ta") return raw;
+    const row = UNIT_NAMES[raw.trim()];
+    return row ? row[lang] || row.en : raw;
+  }
+
+  function normalizeCommandText(raw) {
+    let s = normalizeDeva(normalizeDigits(String(raw || "")));
+    s = s.replace(/[।॥]/g, ", ").replace(/[\u200B-\u200D\uFEFF]/g, "");
+    s = s.replace(/[“”"]/g, " ").replace(/\s+/g, " ").trim();
+    return s;
+  }
+
+  function cmdWords(text) {
+    const out = [];
+    const re = /[^\s,;!?:]+/g;
+    let m;
+    while ((m = re.exec(text))) {
+      let w = m[0];
+      let start = m.index;
+      // trailing full stop is punctuation ("podu." / "500.")
+      while (w.length > 1 && /[.]$/.test(w) && !/\d\.$/.test(w.slice(-2) + "")) { w = w.slice(0, -1); }
+      if (/^\d+\.$/.test(w)) w = w.slice(0, -1);
+      out.push({ t: w, low: w.toLowerCase(), start, end: start + w.length });
+    }
+    return out;
+  }
+
+  function isLatinWord(w) { return /^[A-Za-z'./]+$/.test(w); }
+
+  // Match a phrase (one or more words) at word index i. Latin = exact (case-insensitive);
+  // Tamil/Devanagari single words may be a prefix ("கழிக்க" starts with "கழி").
+  function phraseAt(words, i, phrase, allowPrefix) {
+    const parts = phrase.toLowerCase().split(" ");
+    if (i + parts.length > words.length) return 0;
+    for (let k = 0; k < parts.length; k++) {
+      const w = words[i + k].low;
+      const p = parts[k];
+      const last = k === parts.length - 1;
+      if (w === p) continue;
+      if (allowPrefix && last && !isLatinWord(p) && w.startsWith(p)) continue;
+      return 0;
+    }
+    return parts.length;
+  }
+
+  function findPhraseHits(words, list, kind, allowPrefix) {
+    const sorted = list.slice().sort((a, b) => b.split(" ").length - a.split(" ").length || b.length - a.length);
+    const hits = [];
+    const used = new Array(words.length).fill(false);
+    for (let i = 0; i < words.length; i++) {
+      if (used[i]) continue;
+      for (const p of sorted) {
+        const n = phraseAt(words, i, p, allowPrefix);
+        if (!n) continue;
+        if (kind === "expense" && /^கழிவு/.test(words[i].t)) continue; // கழிவு = discount, not "minus"
+        if (kind === "income" && /^போட்டி/.test(words[i].t)) continue;
+        let clash = false;
+        for (let k = i; k < i + n; k++) if (used[k]) clash = true;
+        if (clash) continue;
+        for (let k = i; k < i + n; k++) used[k] = true;
+        hits.push({ i, n, kind, phrase: p, start: words[i].start, end: words[i + n - 1].end });
+        break;
+      }
+    }
+    return hits;
+  }
+
+  function directionHits(words) {
+    const inc = findPhraseHits(words, CMD_INCOME_WORDS, "income", true);
+    const exp = findPhraseHits(words, CMD_EXPENSE_WORDS, "expense", true);
+    // same word claimed by both lists: keep the longer phrase
+    const all = inc.concat(exp).sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+    const out = [];
+    for (const h of all) {
+      if (out.some((o) => !(h.end <= o.start || h.start >= o.end))) continue;
+      out.push(h);
+    }
+    return out.sort((a, b) => a.start - b.start);
+  }
+
+  function isCurrencyWord(w) {
+    return CMD_CURRENCY_AFTER_RE.test(w) && w.replace(CMD_CURRENCY_AFTER_RE, "").trim() === "";
+  }
+
+  function isDirectionWord(w) {
+    const words = cmdWords(w);
+    return words.length === 1 && directionHits(words).length === 1;
+  }
+
+  function nameish(w, menu) {
+    const t = String(w || "").replace(/'s$/i, "").trim();
+    if (t.length < 2) return false;
+    if (/\d/.test(t)) return false;
+    if (!/^[A-Za-z\u0B80-\u0BFF\u0900-\u097F.'-]+$/.test(t)) return false;
+    const low = t.toLowerCase();
+    if (LEFTOVER_STOP.has(low) || NAME_BLOCK.has(low) || SEPARATOR_WORDS.indexOf(low) !== -1) return false;
+    if (WEAK_NAME_MARKERS.indexOf(low) !== -1) return false;
+    if (parseTamilNumber(t) != null) return false;
+    if (isCurrencyWord(t)) return false;
+    if (isDirectionWord(t)) return false;
+    if (findAllItemHits(t, menu).length) return false;
+    if (findAlias(UNIT_ALIASES, t) && findAlias(UNIT_ALIASES, t).raw.length >= t.length - 1) return false;
+    if (CMD_CREDIT_RE.test(t) || CMD_UPI_RE.test(t) || CMD_CASH_RE.test(t) || CMD_ADJ_RE.test(t)) return false;
+    if (NAME_MARKERS.indexOf(low) !== -1) return false;
+    return true;
+  }
+
+  function prettyName(n) {
+    return String(n || "").trim().split(/\s+/).map((w) => /^[a-z]/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(" ");
+  }
+
+  function nameMarkerHits(words) {
+    return findPhraseHits(words, NAME_MARKERS, "name", false).filter((h) => {
+      // bare English "name"/"account" only counts right after a name-like word
+      if (/^(name|account|a\/c|s name)$/.test(h.phrase)) return h.i > 0;
+      return true;
+    });
+  }
+
+  /** Find "X பேருக்கு" / "X ke naam" / "Xच्या नावावर" / "X ka". Returns { name, text } with the phrase removed. */
+  function extractName(text, menu) {
+    const words = cmdWords(text);
+    const strong = nameMarkerHits(words);
+    for (const h of strong) {
+      let k = h.i - 1;
+      if (k < 0) continue;
+      let nameWords = [];
+      let w = words[k].t;
+      if (/^(च्या|chya|che|cha)$/i.test(w) && k - 1 >= 0) { k -= 1; w = words[k].t; }
+      if (/^(नावावर|नावाने|खात्यावर|खात्यात|navavar|naavavar|navane|khatyavar)$/i.test(h.phrase)) w = w.replace(MARATHI_POSSESSIVE_RE, "").replace(/(chya|che)$/i, "");
+      w = w.replace(/'s$/i, "");
+      if (!nameish(w, menu)) continue;
+      nameWords.push(w);
+      // Typed "Ravi Kumar peruku": a second capitalised latin word
+      if (k - 1 >= 0 && /^[A-Z][a-z]+$/.test(words[k - 1].t) && /^[A-Z]/.test(w) && nameish(words[k - 1].t, menu)) {
+        nameWords.unshift(words[k - 1].t);
+        k -= 1;
+      }
+      const from = words[k].start;
+      const to = h.end;
+      // English "on Ravi's name" / "in Ravi name": drop the leading preposition too
+      let cutFrom = from;
+      if (k - 1 >= 0 && /^(on|in|for|under)$/i.test(words[k - 1].t) && /name|account|a\/c/.test(h.phrase)) cutFrom = words[k - 1].start;
+      return { name: prettyName(nameWords.join(" ")), text: text.slice(0, cutFrom) + " " + text.slice(to), start: cutFrom, end: to, strong: true };
+    }
+    // Weak Hindi: "Ravi ka 100 chai"
+    for (let i = 1; i < words.length; i++) {
+      if (WEAK_NAME_MARKERS.indexOf(words[i].low) === -1) continue;
+      const w = words[i - 1].t;
+      if (!nameish(w, menu)) continue;
+      return { name: prettyName(w), text: text.slice(0, words[i - 1].start) + " " + text.slice(words[i].end), start: words[i - 1].start, end: words[i].end, strong: false };
+    }
+    // Weak Marathi: "रवीचे 100"
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i].t;
+      if (!/[\u0900-\u097F]/.test(w) || !/(च्या|चे|चा|ची|ला)$/.test(w)) continue;
+      if (isDirectionWord(w) || LEFTOVER_STOP.has(w) || NAME_BLOCK.has(w) || findAllItemHits(w, menu).length) continue;
+      const stem = w.replace(/(च्या|चे|चा|ची|ला)$/, "");
+      if (stem.replace(/[\u093E-\u094D\u0902\u0903]/g, "").length < 2 || !nameish(stem, menu)) continue;
+      if ([...LEFTOVER_STOP, ...NAME_BLOCK].some((s) => s.length >= 2 && /[\u0900-\u097F]/.test(s) && stem.startsWith(s))) continue;
+      return { name: stem, text: text.slice(0, words[i].start) + " " + text.slice(words[i].end), start: words[i].start, end: words[i].end, strong: false };
+    }
+    return { name: "", text };
+  }
+
+  function hasNumber(text) {
+    return extractNumbersInOrder(text).length > 0;
+  }
+
+  function isScaleWordToken(w) {
+    const toks = tokenize(stripNoise(w));
+    return toks.length >= 1 && /^(hundred|thousand|lakh|crore)$/.test(toks[toks.length - 1].kind);
+  }
+
+  /** Split on commas / full stops / "and" / "um" / "aur" / "आणि" … */
+  function splitSeparators(text) {
+    // punctuation (keep "20,000" and "2.5" together)
+    const rough = text.split(/\s*(?:;|\n|,(?!\d{2,3}(?!\d))|\.(?!\d)|!|\?)\s*/).map((x) => x.trim()).filter(Boolean);
+    const out = [];
+    for (const part of rough) {
+      const words = cmdWords(part);
+      let from = 0;
+      for (let i = 0; i < words.length; i++) {
+        if (SEPARATOR_WORDS.indexOf(words[i].low) === -1) continue;
+        // "one hundred and fifty" stays one number
+        if (i > 0 && i + 1 < words.length && isScaleWordToken(words[i - 1].t) && parseTamilNumber(words[i + 1].t) != null) continue;
+        const left = part.slice(from, words[i].start).trim();
+        if (left) out.push(left);
+        from = words[i].end;
+      }
+      const tail = part.slice(from).trim();
+      if (tail) out.push(tail);
+    }
+    return out;
+  }
+
+  /** Split one clause at add/minus verbs and name markers ("100 டீ ரவி பேருக்கு 50 வடை குமார் பேருக்கு"). */
+  function splitAtMarkers(text, menu) {
+    const words = cmdWords(text);
+    if (words.length < 3) return [text];
+    const marks = directionHits(words).map((h) => ({ i: h.i, n: h.n, kind: "dir" }))
+      .concat(nameMarkerHits(words).map((h) => ({ i: h.i, n: h.n, kind: "name" })))
+      .sort((a, b) => a.i - b.i);
+    if (!marks.length) return [text];
+    // merge adjacent markers into clusters ("peruku podu")
+    const clusters = [];
+    for (const m of marks) {
+      const last = clusters[clusters.length - 1];
+      if (last && m.i <= last.i + last.n) {
+        last.n = Math.max(last.i + last.n, m.i + m.n) - last.i;
+        if (m.kind === "name") last.hasName = true;
+      } else clusters.push({ i: m.i, n: m.n, kind: m.kind, hasName: m.kind === "name" });
+    }
+    const cuts = [];
+    let segStart = 0;
+    for (const c of clusters) {
+      const mStart = words[c.i].start;
+      const mEnd = words[c.i + c.n - 1].end;
+      if (mStart < segStart) continue;
+      const before = text.slice(segStart, mStart);
+      const rest = text.slice(mEnd);
+      const nums = extractNumbersInOrder(before);
+      if (!nums.length) continue;
+      const firstNumAt = segStart + nums[0].start;
+      const led = clusters.some((o) => o !== c && words[o.i].start >= segStart && words[o.i + o.n - 1].end <= firstNumAt);
+      if (led) {
+        if (!hasNumber(text.slice(mStart))) continue;
+        let cut = mStart;
+        if (c.hasName && c.i - 1 >= 0 && words[c.i - 1].start >= segStart && nameish(words[c.i - 1].t.replace(MARATHI_POSSESSIVE_RE, ""), menu)) cut = words[c.i - 1].start;
+        if (cut <= segStart) continue;
+        cuts.push(cut);
+        segStart = cut;
+      } else {
+        if (!hasNumber(rest)) continue;
+        cuts.push(mEnd);
+        segStart = mEnd;
+      }
+    }
+    if (!cuts.length) return [text];
+    const parts = [];
+    let p = 0;
+    for (const c of cuts) { parts.push(text.slice(p, c).trim()); p = c; }
+    parts.push(text.slice(p).trim());
+    return parts.filter(Boolean);
+  }
+
+  /** "5 idli 3 tea" / "idli 5 tea 3" / "3 kg tomato 90 rs 2 kg onion 60 rs" → one piece per item. */
+  function splitAtItems(text, menu) {
+    const hits = findAllItemHits(text, menu);
+    const nums = extractNumbersInOrder(text);
+    if (hits.length < 2 || nums.length < 2) return [text];
+    const numberFirst = nums[0].start < hits[0].start;
+    const starts = [0];
+    for (let k = 1; k < hits.length; k++) {
+      if (numberFirst) {
+        const gap = nums.filter((n) => n.start >= hits[k - 1].end && n.end <= hits[k].start);
+        if (!gap.length) continue; // "idli dosa 50": no own number → keep together
+        starts.push(gap[gap.length - 1].start);
+      } else {
+        const gap = nums.filter((n) => n.start >= hits[k - 1].end && n.end <= hits[k].start);
+        if (!gap.length) continue;
+        starts.push(hits[k].start);
+      }
+    }
+    if (starts.length < 2) return [text];
+    const parts = [];
+    for (let k = 0; k < starts.length; k++) parts.push(text.slice(starts[k], k + 1 < starts.length ? starts[k + 1] : text.length).trim());
+    return parts.filter(Boolean);
+  }
+
+  function protectVehicles(text) {
+    const vehicles = [];
+    let s = text;
+    let guard = 0;
+    let m;
+    while ((m = s.match(CMD_VEHICLE_KEY_RE)) && guard++ < 5) {
+      vehicles.push(normalizeVehicle(m[1]));
+      s = s.replace(m[0], " §V" + (vehicles.length - 1) + "§ ");
+    }
+    guard = 0;
+    let from = 0;
+    while (guard++ < 5) {
+      const sub = s.slice(from);
+      m = sub.match(CMD_VEHICLE_BARE_RE);
+      if (!m) break;
+      const whole = m[0].slice(m[1].length);
+      const at = from + m.index + m[1].length;
+      const okState = INDIAN_STATE_CODES.test(m[2]);
+      const looksTyped = /[A-Z]/.test(m[2]) || !/\s/.test(whole);
+      if (okState && looksTyped) {
+        vehicles.push(normalizeVehicle(whole));
+        s = s.slice(0, at) + " §V" + (vehicles.length - 1) + "§ " + s.slice(at + whole.length);
+        from = at + 5;
+      } else {
+        from = at + whole.length;
+      }
+    }
+    return { text: s, vehicles };
+  }
+
+  function cleanLeftover(text, menu) {
+    const words = cmdWords(text);
+    const keep = [];
+    for (const w of words) {
+      let t = w.t.replace(/^[^\w\u0B80-\u0BFF\u0900-\u097F]+|[^\w\u0B80-\u0BFF\u0900-\u097F]+$/g, "");
+      if (!t) continue;
+      const low = t.toLowerCase();
+      if (/^§V\d+§$/.test(t)) continue;
+      if (LEFTOVER_STOP.has(low) || SEPARATOR_WORDS.indexOf(low) !== -1) continue;
+      if (!/[A-Za-z\u0B85-\u0BB9\u0905-\u0939]/.test(t)) continue;
+      if (/^\d/.test(t)) continue;
+      if (parseTamilNumber(t) != null && !/[A-Za-z]{4,}/.test(t.replace(/^(?:hundred|thousand|lakh|crore)/i, ""))) continue;
+      if (isCurrencyWord(t)) continue;
+      keep.push(t);
+    }
+    return keep.join(" ").trim();
+  }
+
+  function removeSpans(text, spans) {
+    let s = text;
+    spans.slice().sort((a, b) => b.start - a.start).forEach((sp) => {
+      s = s.slice(0, sp.start) + " ".repeat(Math.max(0, sp.end - sp.start)) + s.slice(sp.end);
+    });
+    return s;
+  }
+
+  /** Parse one piece ("100 ரூபா டீக்கு") into an entry draft, using the clause context for name / verb / payment. */
+  function parseCommandPiece(pieceText, ctx, menu, options) {
+    const raw = pieceText;
+    let s = " " + pieceText + " ";
+    let vehicleNo = "";
+    s = s.replace(/§V(\d+)§/g, (m0, i) => {
+      if (!vehicleNo) vehicleNo = (ctx.vehicles || [])[Number(i)] || "";
+      return " ".repeat(m0.length);
+    });
+    if (!vehicleNo && ctx.vehicleNo) vehicleNo = ctx.vehicleNo;
+
+    const adjMatch = s.match(CMD_ADJ_RE);
+    let payMode = ctx.payMode || null;
+    if (CMD_CREDIT_RE.test(s)) payMode = "credit";
+    else if (CMD_UPI_RE.test(s)) payMode = "upi";
+    else if (CMD_CASH_RE.test(s)) payMode = payMode || "cash";
+
+    let name = "";
+    const nm = extractName(s, menu);
+    if (nm.name) { name = nm.name; s = nm.text; }
+    if (!name && ctx.name) name = ctx.name;
+
+    let words = cmdWords(s);
+    const dHits = directionHits(words);
+    let dir = null;
+    let dirWord = "";
+    if (dHits.length) {
+      dir = dHits[dHits.length - 1].kind;
+      dirWord = dHits[dHits.length - 1].phrase;
+      s = removeSpans(s, dHits);
+    }
+    if (!dir && ctx.dir) { dir = ctx.dir; dirWord = ctx.dirWord || ""; }
+
+    // Hindi "दो चाय" / "do chai" → qty 2 (but "दे दो" stays a verb)
+    words = cmdWords(s);
+    for (let k = 0; k + 1 < words.length; k++) {
+      if (!/^(दो|do)$/i.test(words[k].t)) continue;
+      const next = words[k + 1].t;
+      if (findAllItemHits(next, menu).length || findAlias(UNIT_ALIASES, next)) {
+        s = s.slice(0, words[k].start) + "2" + " ".repeat(words[k].t.length - 1) + s.slice(words[k].end);
+      }
+    }
+
+    const nums = extractNumbersInOrder(s);
+    const hits = findAllItemHits(s, menu);
+    const hit = hits[0] || null;
+    const unitHit = findAlias(UNIT_ALIASES, s);
+    const menuRow = hit && hit.row.kind === "sale" ? hit.row : null;
+    const price = menuRow && menuRow.price != null && Number(menuRow.price) > 0 ? Number(menuRow.price) : null;
+    const cur = nums.find((n) => CMD_CURRENCY_AFTER_RE.test(s.slice(n.end)) || CMD_CURRENCY_BEFORE_RE.test(s.slice(0, n.start)));
+    const others = nums.filter((n) => n !== cur);
+    const adj = !!adjMatch;
+
+    let qty = null;
+    let unitPrice = null;
+    let amount = null;
+    let qtyGuess = false;
+    if (cur) {
+      if (others.length) {
+        qty = others[0].value;
+        if (price && qty > 0 && Math.abs(cur.value - price) < Math.abs(cur.value - qty * price)) {
+          unitPrice = cur.value;
+          amount = roundMoney(qty * cur.value);
+        } else {
+          amount = cur.value;
+          unitPrice = qty ? roundMoney(amount / qty) : null;
+        }
+      } else {
+        amount = cur.value;
+        if (price && amount > 0 && Math.abs(amount / price - Math.round(amount / price)) < 1e-9) {
+          qty = Math.round(amount / price);
+          unitPrice = price;
+        }
+      }
+    } else if (nums.length >= 2) {
+      qty = nums[0].value;
+      if (menuRow && dir !== "expense") {
+        unitPrice = nums[1].value;
+        amount = roundMoney(qty * unitPrice);
+      } else {
+        amount = nums[1].value;
+        unitPrice = qty ? roundMoney(amount / qty) : null;
+      }
+    } else if (nums.length === 1) {
+      const v = nums[0].value;
+      if (menuRow && price && !adj && dir !== "expense" && (unitHit || (v > 0 && v <= 20))) {
+        qty = v;
+        unitPrice = price;
+        amount = roundMoney(v * price);
+        qtyGuess = !unitHit;
+      } else {
+        amount = v;
+        if (price && v > 0 && Math.abs(v / price - Math.round(v / price)) < 1e-9) {
+          qty = Math.round(v / price);
+          unitPrice = price;
+        }
+      }
+    } else if (menuRow && price && !adj && dir !== "expense") {
+      qty = 1;
+      unitPrice = price;
+      amount = price;
+    }
+
+    // Type: spoken verb first, then old keyword hints, then the item, then context.
+    let type = dir;
+    let typeGuessed = false;
+    if (!type) {
+      if (TYPE_EXPENSE_RE.test(raw)) type = "expense";
+      else if (TYPE_INCOME_RE.test(raw)) type = "income";
+    }
+    if (!type && hit) type = hit.row.kind === "expense" ? "expense" : "income";
+    if (!type && vehicleNo) type = "expense";
+    if (!type && unitHit && /^(கிலோ|லிட்டர்|சிலிண்டர்)$/.test(unitHit.row.unit)) type = "expense";
+    if (!type && ctx.inheritDir) type = ctx.inheritDir;
+    if (!type) { type = "income"; typeGuessed = true; }
+
+    let negative = false;
+    let note = "";
+    if (adj && amount != null && !/^(selavu|செலவு|kharcha|खर्च|expense)/i.test(dirWord) && !TYPE_EXPENSE_RE.test(raw)) {
+      negative = true;
+      type = "income";
+      amount = -Math.abs(amount);
+      qty = null;
+      unitPrice = null;
+      note = adjMatch[0];
+    }
+
+    // Leftover words → item (unknown item) or note (known item) or credit name.
+    const spans = nums.map((n) => ({ start: n.start, end: n.end })).concat(hits.map((h) => ({ start: h.start, end: h.end })));
+    let rest = removeSpans(s, spans);
+    if (unitHit) rest = stripPhrase(rest, unitHit.raw);
+    const g = (re) => new RegExp(re.source, "gi");
+    rest = rest.replace(g(CMD_CREDIT_RE), " ").replace(g(CMD_UPI_RE), " ").replace(g(CMD_CASH_RE), " ").replace(g(CMD_ADJ_RE), " ");
+    rest = rest.replace(g(TYPE_EXPENSE_RE), " ").replace(g(TYPE_INCOME_RE), " ");
+    rest = rest.replace(/ரூவா|ரூபாய்|ரூபா|ருபாய்|rupees?|rupaye|rupiya|ruva|ruwa|ruvaa|\brs\b\.?|\binr\b|₹|रुपये|रुपए|रुपया|पैसे/gi, " ");
+    let leftover = cleanLeftover(rest, menu);
+
+    if (payMode === "credit" && type === "income" && !name && leftover) {
+      name = prettyName(leftover.split(" ").slice(0, 2).join(" "));
+      leftover = "";
+    }
+
+    let item = "";
+    let itemEn = "";
+    if (negative) {
+      item = "சரிகட்டு";
+      itemEn = "Adjustment";
+      if (leftover) note = (note + " " + leftover).trim();
+    } else if (hit) {
+      item = hit.row.nameTa;
+      itemEn = hit.row.nameEn;
+      if (leftover) note = leftover;
+    } else if (leftover) {
+      item = leftover;
+    } else {
+      item = type === "income" ? "வரவு" : "செலவு";
+      itemEn = type === "income" ? "Income" : "Expense";
+    }
+
+    const unit = (unitHit && unitHit.row.unit) || (menuRow && menuRow.unit) || (qty != null && type === "income" ? "எண்ணிக்கை" : "");
+    const base = {
+      raw: String(raw).trim(),
+      type,
+      item,
+      itemEn,
+      qty,
+      unit: qty != null ? unit : (unitHit ? unitHit.row.unit : ""),
+      unitPrice,
+      amount: amount == null ? null : roundMoney(amount),
+      vehicleNo: type === "expense" ? vehicleNo : "",
+      note,
+      payMode: payMode || "cash",
+      customerName: name,
+      negative,
+      direction: dir || null
+    };
+    if (amount == null) {
+      return Object.assign(base, { ok: false, error: "no-amount", needsCheck: true, uncertain: { amount: true }, uncertaintyReasons: ["missing-price"] });
+    }
+    if (base.payMode === "credit" && type === "income" && base.amount > 0 && !name) {
+      return Object.assign(base, { ok: false, error: "customer-required", needsCheck: true, uncertain: { customer: true }, uncertaintyReasons: ["credit-needs-name"] });
+    }
+    const uncertain = {};
+    const reasons = [];
+    if (typeGuessed) { uncertain.type = true; reasons.push("type-unstated"); }
+    if (!hit && !negative && leftover) { uncertain.item = true; reasons.push("unknown-item"); }
+    if (qtyGuess) { uncertain.qty = true; reasons.push("number-ambiguous"); }
+    const sc = options && options.speechConfidence;
+    if (sc != null && sc > 0 && sc < 0.7) { uncertain.speech = true; reasons.push("low-speech-confidence"); }
+    return Object.assign(base, {
+      ok: true,
+      confidence: dir || hit ? "high" : "medium",
+      uncertain,
+      uncertaintyReasons: reasons,
+      needsCheck: reasons.length > 0
+    });
+  }
+
+  /** Parse one clause: name / verb / payment found once, then split per item. */
+  function parseCommandClause(text, ctx, menu, options) {
+    const out = [];
+    const nm = extractName(text, menu);
+    let s = nm.name ? nm.text : text;
+    const words = cmdWords(s);
+    const dHits = directionHits(words);
+    const clauseCtx = Object.assign({}, ctx, { name: nm.name || "" });
+    if (dHits.length) {
+      clauseCtx.dir = dHits[dHits.length - 1].kind;
+      clauseCtx.dirWord = dHits[dHits.length - 1].phrase;
+      s = removeSpans(s, dHits);
+    }
+    if (CMD_CREDIT_RE.test(text)) clauseCtx.payMode = "credit";
+    else if (CMD_UPI_RE.test(text)) clauseCtx.payMode = "upi";
+    let pieces = splitAtItems(s, menu);
+    // vehicle placeholders sit in one piece; share with the expense pieces of this clause
+    const vm = s.match(/§V(\d+)§/);
+    if (vm) clauseCtx.vehicleNo = (ctx.vehicles || [])[Number(vm[1])] || "";
+    for (const p of pieces) out.push(parseCommandPiece(p, clauseCtx, menu, options));
+    return { entries: out, dir: clauseCtx.dir || null };
+  }
+
+  /**
+   * One spoken or typed sentence → zero or more ledger drafts, saved without a confirm step.
+   * Returns { ok, raw, entries, failed, paired, margin, needsSheet, error }.
+   * needsSheet is true only when no amount could be read at all.
+   */
+  function parseCommand(text, options) {
+    const raw = String(text || "").trim();
+    if (!raw) return { ok: false, error: "empty", raw: "", entries: [], failed: [], needsSheet: true };
+    const menu = (options && options.menu) || defaultMenu();
+    const norm = normalizeCommandText(raw);
+    const prot = protectVehicles(norm);
+    const ctxBase = { vehicles: prot.vehicles };
+
+    // 1) separators, then merge pieces that carry neither a number nor an item into a neighbour
+    let segs = splitSeparators(prot.text);
+    const merged = [];
+    for (let i = 0; i < segs.length; i++) {
+      const sg = segs[i];
+      const hasStuff = hasNumber(sg.replace(/§V\d+§/g, " ")) || findAllItemHits(sg, menu).length > 0;
+      if (!hasStuff) {
+        if (i + 1 < segs.length) { segs[i + 1] = sg + " " + segs[i + 1]; continue; }
+        if (merged.length) { merged[merged.length - 1] = merged[merged.length - 1] + " " + sg; continue; }
+      }
+      merged.push(sg);
+    }
+    segs = merged;
+
+    const entries = [];
+    const failed = [];
+    let paired = false;
+    let margin = null;
+    let prevDir = null;
+    for (const seg of segs) {
+      // 2) the v6 spend/earn pair ("30 ரூவா கழி 50 ரூவா வருது") stays one unit
+      const pair = parsePairDeal(seg.replace(/§V\d+§/g, " "), Object.assign({}, options, { menu }));
+      if (pair && pair.ok) {
+        paired = true;
+        margin = (margin || 0) + pair.margin;
+        const nm = extractName(seg, menu);
+        pair.entries.forEach((e) => {
+          if (nm.name && !e.customerName) e.customerName = nm.name;
+          e.ok = true;
+          entries.push(e);
+        });
+        continue;
+      }
+      // 3) verbs / name markers split one clause into several entries
+      const clauses = splitAtMarkers(seg, menu);
+      for (const cl of clauses) {
+        const res = parseCommandClause(cl, Object.assign({}, ctxBase, { inheritDir: prevDir }), menu, options);
+        res.entries.forEach((e) => {
+          if (e.ok) entries.push(e);
+          else failed.push(e);
+        });
+        if (res.dir) prevDir = res.dir;
+      }
+    }
+    const onlyPair = paired && entries.length === 2 && entries.every((e) => e.pairRole);
+    return {
+      ok: entries.length > 0,
+      raw,
+      entries,
+      failed,
+      paired: onlyPair,
+      margin: onlyPair ? margin : null,
+      needsSheet: entries.length === 0,
+      needsCheck: entries.some((e) => e.needsCheck),
+      error: entries.length ? undefined : (failed[0] && failed[0].error) || "no-amount",
+      first: entries[0] || failed[0] || null
+    };
+  }
+
+  const VOICE_LANG = { ta: "ta-IN", en: "en-IN", hi: "hi-IN", mr: "mr-IN" };
+  function speechLangFor(lang) {
+    return VOICE_LANG[lang] || "ta-IN";
+  }
+
+  const SUMMARY_TEXT = {
+    ta: { acc: "கணக்கு", inc: "வரவு", exp: "செலவு", prof: "லாபம்", cash: "ரொக்கம்", credit: "கடன்", unpaid: "நிலுவைக் கடன்", top: "அதிகம் விற்றவை", shop: "கடை கணக்கு" },
+    en: { acc: "Accounts", inc: "Income", exp: "Expense", prof: "Profit", cash: "Cash", credit: "Credit", unpaid: "Unpaid credit", top: "Top items", shop: "Kadai Tracker" },
+    hi: { acc: "हिसाब", inc: "आमदनी", exp: "खर्च", prof: "मुनाफा", cash: "नकद", credit: "उधार", unpaid: "बाकी उधार", top: "सबसे ज़्यादा बिके", shop: "दुकान हिसाब" },
+    mr: { acc: "हिशोब", inc: "जमा", exp: "खर्च", prof: "नफा", cash: "रोख", credit: "उधारी", unpaid: "बाकी उधारी", top: "सर्वाधिक विकले", shop: "दुकान हिशोब" }
+  };
+
+  /** WhatsApp summary in the chosen language (English line kept under Tamil/Hindi/Marathi). */
+  const NAMES_HEAD = { ta: "பெயர் வாரியாக / By name", en: "By name", hi: "नाम से / By name", mr: "नावानुसार / By name" };
+  const CREDIT_TAG = { ta: "கடன்", en: "credit", hi: "उधार", mr: "उधारी" };
+
+  /** Lines listing entries saved with a person's name ("👤 Ravi: ₹100 — Tea"). */
+  function namedSummaryLines(entries, date, lang) {
+    const d = normalizeDate(date);
+    const named = (entries || []).filter((e) => e && e.date === d && String(e.customerName || "").trim());
+    if (!named.length) return [];
+    const out = ["", NAMES_HEAD[lang] || NAMES_HEAD.en + ":"];
+    if (out[1].slice(-1) !== ":") out[1] += ":";
+    named.forEach((e) => {
+      const sign = e.type === "expense" ? "−" : "";
+      const item = e.item ? " — " + itemLabel(e.item, lang || "ta") : "";
+      const cr = e.payMode === "credit" && !e.creditPaid ? " (" + (CREDIT_TAG[lang] || CREDIT_TAG.en) + ")" : "";
+      out.push("👤 " + String(e.customerName).trim() + ": " + sign + "₹" + Math.abs(Number(e.amount) || 0) + item + cr);
+    });
+    return out;
+  }
+
+  function daySummaryTextLang(entries, date, shopName, lang) {
+    if (!lang || lang === "ta") return daySummaryText(entries, date, shopName) + (namedSummaryLines(entries, date, "ta").length ? "\n" + namedSummaryLines(entries, date, "ta").join("\n") : "");
+    const L1 = SUMMARY_TEXT[lang] || SUMMARY_TEXT.en;
+    const E = SUMMARY_TEXT.en;
+    const both = (k) => (lang === "en" ? E[k] : L1[k] + " / " + E[k]);
+    const d = normalizeDate(date);
+    const t = computeTotals(entries, d);
+    const pay = paymentBreakdown(entries, d);
+    const top = topSelling(entries, d, d, 5);
+    const lines = [
+      shopName || L1.shop,
+      both("acc") + " — " + d,
+      "",
+      both("inc") + ": ₹" + t.income,
+      both("exp") + ": ₹" + t.expense,
+      both("prof") + ": ₹" + t.profit,
+      "",
+      both("cash") + ": ₹" + pay.cash,
+      "UPI: ₹" + pay.upi,
+      both("credit") + ": ₹" + pay.credit,
+      both("unpaid") + ": ₹" + pay.unpaidCredit
+    ];
+    if (top.length) {
+      lines.push("", both("top") + ":");
+      top.forEach((x, i) => {
+        lines.push(i + 1 + ". " + itemLabel(x.item, lang) + " — ₹" + x.amount + (x.qty ? " (" + x.qty + ")" : ""));
+      });
+    }
+    return lines.concat(namedSummaryLines(entries, date, lang)).join("\n");
+  }
+
   const api = {
     parseTamilNumber,
     parseUtterance,
     parseUtterances,
     parsePairDeal,
+    parseCommand,
+    itemLabel,
+    unitLabel,
+    speechLangFor,
+    daySummaryTextLang,
+    normalizeCommandText,
     parsedToEntry,
     VOICE,
     shouldRestartRecognition,
@@ -3131,7 +4354,7 @@
 
 </script>
   <script>
-/* built by node build.js — edit logic.js / app.js, not this file */
+/* built by node build.js — edit i18n.js / logic.js / app.js, not this file */
 /* Kadai Tracker UI. Typing is the primary path; one-shot voice is optional. */
 (function () {
   "use strict";
@@ -3148,6 +4371,73 @@
     upi: { ta: "UPI", en: "UPI" },
     credit: { ta: "கடன்", en: "Credit" }
   };
+
+  /* ---------- v7 language helpers ----------
+   * P(ta, en)  primary text in the chosen language (Hindi/Marathi from i18n.js, keyed by English)
+   * H(ta, en)  stacked markup: primary on top, small English underneath (English mode: English only)
+   * S(ta, en)  one-line text "primary / English" for toasts, aria-labels and error boxes
+   */
+  const I18N = window.KadaiI18n || { DICT: {} };
+  const PAIRS = new Map();
+  const LANGS = ["ta", "en", "hi", "mr"];
+  function curLang() {
+    const l = state && state.settings && state.settings.lang;
+    return LANGS.indexOf(l) !== -1 ? l : "ta";
+  }
+  function P(ta, en) {
+    const l = curLang();
+    if (l === "ta") return ta;
+    if (l === "en") return en;
+    const row = I18N.DICT[en];
+    return (row && row[l]) || en;
+  }
+  function H(ta, en) {
+    const p = P(ta, en);
+    if (curLang() === "en" || p === en) return '<span class="bi" data-dyn="1"><span class="ta">' + p + "</span></span>";
+    return '<span class="bi" data-dyn="1"><span class="ta">' + p + '</span><span class="en">' + en + "</span></span>";
+  }
+  function TL(ta, en) {
+    const p = P(ta, en);
+    if (curLang() === "en" || p === en) return '<span class="tl"><span class="ta">' + p + "</span></span>";
+    return '<span class="tl"><span class="ta">' + p + '</span><span class="en">' + en + "</span></span>";
+  }
+  function S(ta, en) {
+    const p = P(ta, en);
+    if (curLang() === "en" || p === en) return en;
+    const out = p + " / " + en;
+    PAIRS.set(out, [p, en]);
+    return out;
+  }
+  function msgHtml(msg) {
+    const m = String(msg == null ? "" : msg);
+    if (PAIRS.has(m)) {
+      const pair = PAIRS.get(m);
+      return '<span class="ta">' + escapeHtml(pair[0]) + '</span><span class="en">' + escapeHtml(pair[1]) + "</span>";
+    }
+    return '<span class="ta">' + escapeHtml(m) + "</span>";
+  }
+  function setMsg(el, msg) {
+    if (!el) return;
+    if (!msg) { el.innerHTML = ""; return; }
+    el.innerHTML = '<span class="bi" data-dyn="1">' + msgHtml(msg) + "</span>";
+  }
+  function itemName(item) {
+    return L.itemLabel(item, curLang());
+  }
+  /** English name under a known item, for Tamil / Hindi / Marathi screens. */
+  function itemEnSub(item) {
+    if (curLang() === "en") return "";
+    const en = L.itemLabel(item, "en");
+    return en && en !== itemName(item) ? en : "";
+  }
+  function unitName(u) {
+    return L.unitLabel(u, curLang());
+  }
+  function payLabel(pm) {
+    const row = PAY_LABEL[pm] || PAY_LABEL.cash;
+    return P(row.ta, row.en);
+  }
+  const DEFAULT_SHOP_TA = "இட்லி தோசை டீ கடை";
 
   const ICONS = {
     idli: '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="50" rx="26" ry="9" fill="#5B8C3A"/><ellipse cx="32" cy="47" rx="24" ry="8" fill="#7CB35A"/><ellipse cx="20" cy="40" rx="11" ry="7" fill="#E8DCC8"/><ellipse cx="20" cy="38" rx="11" ry="7" fill="#FFFDF8"/><ellipse cx="44" cy="40" rx="11" ry="7" fill="#E8DCC8"/><ellipse cx="44" cy="38" rx="11" ry="7" fill="#FFFDF8"/><ellipse cx="32" cy="34" rx="11" ry="7" fill="#E8DCC8"/><ellipse cx="32" cy="32" rx="11" ry="7" fill="#FFFDF8"/><path d="M26 24c0-4 3-7 6-8" stroke="#C5B8A4" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M32 22c0-4 2-6 5-7" stroke="#C5B8A4" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>',
@@ -3188,7 +4478,7 @@
   const state = {
     date: L.todayISO(),
     entries: [],
-    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [] },
+    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [] },
     form: null,
     amountManual: false,
     formPay: "cash",
@@ -3211,6 +4501,7 @@
     shopSection: "stock",
     undoEntry: null,
     undoAction: null,
+    lastSavedIds: [],
     qtyForMenuId: null,
     suppressMenuClick: false
   };
@@ -3234,12 +4525,19 @@
     state.settings = {
       shopName: (parsed && parsed.shopName) || state.settings.shopName || "இட்லி தோசை டீ கடை",
       menu: L.normalizeMenu(parsed && parsed.menu),
-      voiceLang: (parsed && parsed.voiceLang) || "ta-IN",
+      voiceLang: normalizeVoiceLang(parsed && parsed.voiceLang, parsed && parsed.lang),
+      lang: parsed && LANGS.indexOf(parsed.lang) !== -1 ? parsed.lang : null,
       stock: shop.stock,
       staff: shop.staff,
       wages: shop.wages,
       stockMoves: shop.stockMoves
     };
+  }
+
+  function normalizeVoiceLang(v, lang) {
+    if (v === "tanglish") return "en-IN";
+    if (["ta-IN", "en-IN", "hi-IN", "mr-IN"].indexOf(v) !== -1) return v;
+    return L.speechLangFor(lang || "ta");
   }
 
   function loadStore() {
@@ -3281,7 +4579,13 @@
   function formatDateTa(iso) {
     const [y, m, d] = iso.split("-").map(Number);
     const dt = new Date(y, m - 1, d);
-    return `${d} ${MONTHS_TA[m - 1]}, ${DAYS_TA[dt.getDay()]}`;
+    const l = curLang();
+    if (l === "ta") return `${d} ${MONTHS_TA[m - 1]}, ${DAYS_TA[dt.getDay()]}`;
+    try {
+      return new Intl.DateTimeFormat(l + "-IN", { day: "numeric", month: "long", weekday: "long" }).format(dt);
+    } catch (e) {
+      return iso;
+    }
   }
 
   function isToday(iso) {
@@ -3296,16 +4600,20 @@
       .replace(/"/g, "&quot;");
   }
 
+  const UNDO_MS = 8000;
+
   function toast(msg, opts) {
     opts = opts || {};
     const el = document.getElementById("toast");
     const msgEl = document.getElementById("toastMsg") || el;
     const undoBtn = document.getElementById("toastUndo");
-    msgEl.textContent = msg;
+    const editBtn = document.getElementById("toastEdit");
+    msgEl.innerHTML = opts.html ? msg : msgHtml(msg);
     if (undoBtn) undoBtn.hidden = !(opts.undo && (state.undoAction || state.undoEntry));
+    if (editBtn) editBtn.hidden = !(opts.edit && state.lastSavedIds && state.lastSavedIds.length);
     el.classList.add("show");
     clearTimeout(toast._t);
-    const ms = opts.ms || (opts.undo ? 5000 : 2800);
+    const ms = opts.ms || (opts.undo ? UNDO_MS : 2800);
     toast._t = setTimeout(() => {
       el.classList.remove("show");
       if (opts.undo) {
@@ -3313,7 +4621,18 @@
         state.undoAction = null;
         if (undoBtn) undoBtn.hidden = true;
       }
+      if (editBtn) editBtn.hidden = true;
     }, ms);
+  }
+
+  function hideToast() {
+    clearTimeout(toast._t);
+    const el = document.getElementById("toast");
+    if (el) el.classList.remove("show");
+    const u = document.getElementById("toastUndo");
+    if (u) u.hidden = true;
+    const e = document.getElementById("toastEdit");
+    if (e) e.hidden = true;
   }
 
   function undoLast() {
@@ -3321,13 +4640,17 @@
     state.undoEntry = null;
     state.undoAction = null;
     clearTimeout(toast._t);
-    const undoBtn = document.getElementById("toastUndo");
-    if (undoBtn) undoBtn.hidden = true;
-    const toastEl = document.getElementById("toast");
-    if (toastEl) toastEl.classList.remove("show");
+    hideToast();
+    state.lastSavedIds = [];
     if (!action) return;
     let result;
-    if (action.kind === "remove") {
+    if (action.kind === "removeMany") {
+      const led = ledger();
+      for (const id of action.ids) {
+        result = led.remove(id);
+        if (!result.ok) break;
+      }
+    } else if (action.kind === "remove") {
       result = ledger().remove(action.id);
     } else if (action.kind === "revert") {
       result = ledger().edit(action.id, action.prev);
@@ -3335,10 +4658,10 @@
       result = ledger().add(action.entry);
     }
     if (!result || !result.ok) {
-      toast("மீட்க முடியவில்லை / Could not undo");
+      toast(S("மீட்க முடியவில்லை", "Could not undo"));
       return;
     }
-    applyLedger(result, "செயல்தவிர்க்கப்பட்டது ✓ / Undone");
+    applyLedger(result, S("செயல்தவிர்க்கப்பட்டது ✓", "Undone ✓"));
   }
   function undoDelete() { undoLast(); }
 
@@ -3355,7 +4678,7 @@
     }
     const n = L.parseTamilNumber(raw);
     if (n == null) {
-      hintEl.textContent = "எண்ணைப் புரிந்துகொள்ளவில்லை / Could not read this number";
+      hintEl.textContent = S("எண்ணைப் புரிந்துகொள்ளவில்லை", "Could not read this number");
       hintEl.className = "hint bad";
       return null;
     }
@@ -3372,8 +4695,15 @@
     return { empty: false, value: L.parseTamilNumber(raw), raw };
   }
 
+  function shopTitle() {
+    const n = state.settings.shopName || DEFAULT_SHOP_TA;
+    if (n !== DEFAULT_SHOP_TA) return n;
+    return { ta: DEFAULT_SHOP_TA, en: "Idli Dosa Tea Stall", hi: "इडली डोसा चाय दुकान", mr: "इडली डोसा चहा दुकान" }[curLang()];
+  }
+
   function render() {
-    document.getElementById("shopName").textContent = state.settings.shopName || "இட்லி தோசை டீ கடை";
+    applyStaticLang();
+    document.getElementById("shopName").textContent = shopTitle();
     document.getElementById("dateLabel").textContent = formatDateTa(state.date);
     document.getElementById("dateInput").value = state.date;
     document.getElementById("todayBtn").hidden = isToday(state.date);
@@ -3388,9 +4718,9 @@
 
     const pay = L.paymentBreakdown(state.entries, state.date);
     document.getElementById("payLine").innerHTML =
-      `<span>ரொக்கம் / Cash ${formatMoney(pay.cash)}</span>` +
+      `<span>${TL("ரொக்கம்", "Cash")} ${formatMoney(pay.cash)}</span>` +
       `<span>UPI ${formatMoney(pay.upi)}</span>` +
-      `<span>கடன் / Credit ${formatMoney(pay.credit)}</span>`;
+      `<span>${TL("கடன்", "Credit")} ${formatMoney(pay.credit)}</span>`;
 
     document.getElementById("panelToday").hidden = state.tab !== "Today";
     document.getElementById("panelKadan").hidden = state.tab !== "Kadan";
@@ -3405,6 +4735,10 @@
       b.classList.toggle("on", b.getAttribute("data-lang") === state.settings.voiceLang);
     });
 
+    document.querySelectorAll("[data-setlang]").forEach((b) => {
+      b.classList.toggle("on", b.getAttribute("data-setlang") === curLang());
+    });
+
     renderMenu();
     renderList();
     renderKadan();
@@ -3414,8 +4748,15 @@
   function renderMenu() {
     const box = document.getElementById("menuGrid");
     box.innerHTML = (state.settings.menu || []).map((m) => {
-      const label = escapeHtml(m.nameTa || m.nameEn);
-      const en = m.nameEn && m.nameEn !== m.nameTa ? `<span class="en">${escapeHtml(m.nameEn)}</span>` : "";
+      const l = curLang();
+      let main = m.nameTa || m.nameEn;
+      if (l === "en") main = m.nameEn || m.nameTa;
+      else if (l !== "ta") {
+        const tr = L.itemLabel(m.nameTa, l);
+        main = tr !== m.nameTa ? tr : (m.nameEn || m.nameTa);
+      }
+      const label = escapeHtml(main);
+      const en = l !== "en" && m.nameEn && m.nameEn !== main ? `<span class="en">${escapeHtml(m.nameEn)}</span>` : "";
       const icon = iconSvg(m.id);
       const on = state.qtyForMenuId === m.id ? " on-qty" : "";
       return `<button type="button" class="menu-btn${on}" data-menu="${escapeHtml(m.id)}">
@@ -3433,30 +4774,33 @@
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")) || String(b.id).localeCompare(String(a.id)));
     const box = document.getElementById("entryList");
     if (!list.length) {
-      box.innerHTML = '<div class="empty">இன்று இன்னும் பதிவே இல்லை.<br>Today has no entries yet.<br>மேலே பேசவும், தட்டச்சு செய்யவும், அல்லது மெனுவைத் தட்டவும்.</div>';
+      box.innerHTML = '<div class="empty">' + H("இன்று இன்னும் பதிவே இல்லை. மேலே பேசவும், தட்டச்சு செய்யவும், அல்லது மெனுவைத் தட்டவும்.", "No entries yet today. Speak, type, or tap a menu picture above.") + "</div>";
       return;
     }
     box.innerHTML = list.map((e) => {
       const signClass = e.type === "income" ? "in" : "ex";
-      const kind = e.type === "income" ? "வரவு / In" : "செலவு / Ex";
+      const kind = e.type === "income" ? TL("வரவு", "In") : TL("செலவு", "Ex");
       const pm = L.payModeOf(e);
-      const pay = `<span class="pay ${pm}">${PAY_LABEL[pm].ta} / ${PAY_LABEL[pm].en}</span>`;
+      const pay = `<span class="pay ${pm}">${TL(PAY_LABEL[pm].ta, PAY_LABEL[pm].en)}</span>`;
       const qtyBit = e.qty != null && !Number.isNaN(Number(e.qty))
-        ? `<span class="meta">${e.qty}${e.unit ? " " + escapeHtml(e.unit) : ""}${e.unitPrice != null ? " × " + formatMoney(e.unitPrice) : ""}</span>`
+        ? `<span class="meta">${e.qty}${e.unit ? " " + escapeHtml(unitName(e.unit)) : ""}${e.unitPrice != null ? " × " + formatMoney(e.unitPrice) : ""}</span>`
         : "";
-      const veh = e.type === "expense" && e.vehicleNo ? `<span class="meta">வாகனம் / Vehicle: ${escapeHtml(e.vehicleNo)}</span>` : "";
-      const cust = pm === "credit" && e.customerName
-        ? `<span class="meta">கடன் / Credit: ${escapeHtml(e.customerName)}${e.creditPaid ? " (செலுத்தியது / paid)" : ""}</span>`
+      const veh = e.type === "expense" && e.vehicleNo ? `<span class="meta">${escapeHtml(S("வாகனம்", "Vehicle"))}: ${escapeHtml(e.vehicleNo)}</span>` : "";
+      const cust = e.customerName
+        ? (pm === "credit"
+          ? `<span class="meta who">👤 ${escapeHtml(S("கடன்", "Credit"))}: ${escapeHtml(e.customerName)}${e.creditPaid ? " (" + escapeHtml(S("செலுத்தியது", "paid")) + ")" : ""}</span>`
+          : `<span class="meta who">👤 ${escapeHtml(e.customerName)}</span>`)
         : "";
-      const note = e.note ? `<span class="note">குறிப்பு / Note: ${escapeHtml(e.note)}</span>` : "";
-      const adj = Number(e.amount) < 0 ? '<span class="adj-tag">சரிகட்டு / Adj</span>' : "";
+      const note = e.note ? `<span class="note">${escapeHtml(S("குறிப்பு", "Note"))}: ${escapeHtml(e.note)}</span>` : "";
+      const adj = Number(e.amount) < 0 ? `<span class="adj-tag">${TL("சரிகட்டு", "Adj")}</span>` : "";
+      const sub = itemEnSub(e.item);
       const canStep = e.type === "income" && e.unitPrice != null && Number(e.amount) >= 0;
       const stepper = canStep
         ? `<button type="button" class="qty-btn" data-act="qty" data-delta="-1" data-id="${escapeHtml(e.id)}">−</button><button type="button" class="qty-btn" data-act="qty" data-delta="1" data-id="${escapeHtml(e.id)}">+</button>`
         : "";
       return `<article class="row ${signClass}" data-id="${escapeHtml(e.id)}">
         <div class="row-main">
-          <div class="item">${escapeHtml(e.item || "—")}</div>
+          <div class="item">${escapeHtml(itemName(e.item) || "—")}${sub ? `<span class="en-sub">${escapeHtml(sub)}</span>` : ""}</div>
           <div class="row-top">
             <span class="kind">${kind}</span>${pay}${adj}
           </div>
@@ -3465,8 +4809,8 @@
         <div class="amt">${formatMoney(e.amount)}</div>
         <div class="row-actions">
           ${stepper}
-          <button type="button" class="btn-edit" data-act="edit" data-id="${escapeHtml(e.id)}" aria-label="திருத்து / Edit">✏️</button>
-          <button type="button" class="btn-del" data-act="delete" data-id="${escapeHtml(e.id)}" aria-label="நீக்கு / Delete">🗑️</button>
+          <button type="button" class="btn-edit" data-act="edit" data-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(S("திருத்து", "Edit"))}">✏️</button>
+          <button type="button" class="btn-del" data-act="delete" data-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(S("நீக்கு", "Delete"))}">🗑️</button>
         </div>
       </article>`;
     }).join("");
@@ -3476,20 +4820,20 @@
     const book = L.kadanBook(state.entries);
     const box = document.getElementById("kadanList");
     if (!book.length) {
-      box.innerHTML = '<div class="empty">நிலுவைக் கடன் இல்லை.<br>No outstanding credit.</div>';
+      box.innerHTML = '<div class="empty">' + H("நிலுவைக் கடன் இல்லை.", "No outstanding credit.") + "</div>";
       return;
     }
     box.innerHTML = book.map((g) => {
-      const lines = g.entries.map((e) => `${e.date} · ${escapeHtml(e.item || "")} · ${formatMoney(e.amount)}`).join("<br>");
+      const lines = g.entries.map((e) => `${e.date} · ${escapeHtml(itemName(e.item) || "")} · ${formatMoney(e.amount)}`).join("<br>");
       return `<div class="card">
         <div class="kadan-row">
           <div>
             <div style="font-weight:700;font-size:18px">${escapeHtml(g.name)}</div>
-            <div class="row-meta">${g.count} பதிவு / entries<br>${lines}</div>
+            <div class="row-meta">${g.count} ${escapeHtml(S("பதிவு", "entries"))}<br>${lines}</div>
           </div>
           <div style="text-align:right">
             <div class="amt" style="color:var(--saffron)">${formatMoney(g.owed)}</div>
-            <button type="button" class="ok" data-paid="${escapeHtml(g.name)}" style="margin-top:8px;padding:8px 12px">செலுத்தினார் / Mark paid</button>
+            <button type="button" class="ok" data-paid="${escapeHtml(g.name)}" style="margin-top:8px;padding:8px 12px">${H("செலுத்தினார்", "Mark paid")}</button>
           </div>
         </div>
       </div>`;
@@ -3499,11 +4843,11 @@
   function rangeCard(titleTa, titleEn, from, to) {
     const t = L.computeTotalsRange(state.entries, from, to);
     const top = L.topSelling(state.entries, from, to, 5);
-    return `<div class="bi"><span class="ta">${titleTa}</span><span class="en">${titleEn} (${from} – ${to})</span></div>
+    return `${H(titleTa, titleEn)}<div class="help">${from} – ${to}</div>
       <div class="pay-line" style="margin-top:10px">
-        <span>வரவு / In ${formatMoney(t.income)}</span>
-        <span>செலவு / Ex ${formatMoney(t.expense)}</span>
-        <span>லாபம் / Profit ${formatMoney(t.profit)}</span>
+        <span>${TL("வரவு", "In")} ${formatMoney(t.income)}</span>
+        <span>${TL("செலவு", "Ex")} ${formatMoney(t.expense)}</span>
+        <span>${TL("லாபம்", "Profit")} ${formatMoney(t.profit)}</span>
       </div>`;
   }
 
@@ -3512,25 +4856,25 @@
     const t = L.computeTotals(state.entries, d);
     const pay = L.paymentBreakdown(state.entries, d);
     document.getElementById("eodCard").innerHTML =
-      `<div class="bi"><span class="ta">இன்றைய சுருக்கம்</span><span class="en">End-of-day summary — ${escapeHtml(formatDateTa(d))}</span></div>
-       <p style="font-weight:700;margin:10px 0 6px">${escapeHtml(state.settings.shopName || "")}</p>
-       <div>வரவு / Income: <strong>${formatMoney(t.income)}</strong></div>
-       <div>செலவு / Expense: <strong>${formatMoney(t.expense)}</strong></div>
-       <div>லாபம் / Profit: <strong>${formatMoney(t.profit)}</strong></div>
+      `${H("இன்றைய சுருக்கம்", "End-of-day summary")}<div class="help">${escapeHtml(formatDateTa(d))}</div>
+       <p style="font-weight:700;margin:10px 0 6px">${escapeHtml(shopTitle())}</p>
+       <div>${TL("வரவு", "Income")}: <strong>${formatMoney(t.income)}</strong></div>
+       <div>${TL("செலவு", "Expense")}: <strong>${formatMoney(t.expense)}</strong></div>
+       <div>${TL("லாபம்", "Profit")}: <strong>${formatMoney(t.profit)}</strong></div>
        <div class="pay-line">
-         <span>ரொக்கம் / Cash ${formatMoney(pay.cash)}</span>
+         <span>${TL("ரொக்கம்", "Cash")} ${formatMoney(pay.cash)}</span>
          <span>UPI ${formatMoney(pay.upi)}</span>
-         <span>கடன் / Credit ${formatMoney(pay.credit)}</span>
+         <span>${TL("கடன்", "Credit")} ${formatMoney(pay.credit)}</span>
        </div>
-       <div style="margin-top:8px;color:var(--muted)">நிலுவைக் கடன் / Unpaid credit: ${formatMoney(pay.unpaidCredit)}</div>`;
+       <div style="margin-top:8px;color:var(--muted)">${TL("நிலுவைக் கடன்", "Unpaid credit")}: ${formatMoney(pay.unpaidCredit)}</div>`;
     document.getElementById("weekCard").innerHTML = rangeCard("இந்த வாரம்", "This week", L.startOfWeek(d), L.endOfWeek(d));
     document.getElementById("monthCard").innerHTML = rangeCard("இந்த மாதம்", "This month", L.startOfMonth(d), L.endOfMonth(d));
     const top = L.topSelling(state.entries, L.startOfMonth(d), L.endOfMonth(d), 8);
     document.getElementById("topCard").innerHTML =
-      `<div class="bi"><span class="ta">இந்த மாதம் அதிகம் விற்றவை</span><span class="en">Top-selling items this month</span></div>` +
+      H("இந்த மாதம் அதிகம் விற்றவை", "Top-selling items this month") +
       (top.length
-        ? "<ol style='margin:10px 0 0;padding-left:20px'>" + top.map((x) => `<li><strong>${escapeHtml(x.item)}</strong> — ${formatMoney(x.amount)}${x.qty ? " (" + x.qty + ")" : ""}</li>`).join("") + "</ol>"
-        : "<p class='help'>இந்த மாதம் வரவுப் பதிவு இல்லை. / No sales this month.</p>");
+        ? "<ol style='margin:10px 0 0;padding-left:20px'>" + top.map((x) => `<li><strong>${escapeHtml(itemName(x.item))}</strong> — ${formatMoney(x.amount)}${x.qty ? " (" + x.qty + ")" : ""}</li>`).join("") + "</ol>"
+        : "<p class='help'>" + H("இந்த மாதம் வரவுப் பதிவு இல்லை.", "No sales this month.") + "</p>");
   }
 
   function setTab(tab) {
@@ -3548,7 +4892,15 @@
   }
 
   function savedToast(detail) {
-    return detail ? "சேமிக்கப்பட்டது ✓  " + detail : "சேமிக்கப்பட்டது ✓";
+    const head = S("சேமிக்கப்பட்டது ✓", "Saved ✓");
+    if (!detail) return head;
+    const pair = PAIRS.get(head);
+    if (pair) {
+      const out = pair[0] + "  " + detail + " / " + pair[1] + "  " + detail;
+      PAIRS.set(out, [pair[0] + "  " + detail, pair[1] + "  " + detail]);
+      return out;
+    }
+    return head + "  " + detail;
   }
 
   function addMenuSale(menuId, qtyOverride) {
@@ -3556,10 +4908,11 @@
     if (!m) return;
     const price = Number(m.price);
     if (!price) {
-      toast("முதலில் விலையை அமைப்புகளில் போடவும் / Set a price in Settings first");
+      toast(S("முதலில் விலையை அமைப்புகளில் போடவும்", "Set a price in Settings first"));
       return;
     }
     const name = m.nameTa || m.nameEn;
+    const shown = curLang() === "en" ? (m.nameEn || name) : (curLang() === "ta" ? name : (L.itemLabel(m.nameTa, curLang()) !== m.nameTa ? L.itemLabel(m.nameTa, curLang()) : (m.nameEn || name)));
     const addQty = Math.max(1, Number(qtyOverride != null ? qtyOverride : 1) || 1);
     const existing = state.entries.find((e) =>
       e.date === state.date &&
@@ -3576,8 +4929,9 @@
       const qty = (existing.qty || 1) + addQty;
       const result = led.edit(existing.id, { qty, amount: L.roundMoney(qty * price), unitPrice: price, unit: m.unit });
       state.undoAction = { kind: "revert", id: existing.id, prev };
-      applyLedger(result, savedToast(name + " × " + qty), { skipToast: true });
-      toast(savedToast(name + " × " + qty), { undo: true, ms: 5000 });
+      state.lastSavedIds = [existing.id];
+      applyLedger(result, null, { skipToast: true });
+      toast(savedToast(shown + " × " + qty), { undo: true, edit: true });
       return;
     }
     const result = led.add({
@@ -3590,9 +4944,12 @@
       amount: L.roundMoney(addQty * price),
       payMode: "cash"
     });
-    if (result.ok && result.entry) state.undoAction = { kind: "remove", id: result.entry.id };
-    applyLedger(result, savedToast(name + " × " + addQty), { skipToast: true });
-    toast(savedToast(name + " × " + addQty), { undo: true, ms: 5000 });
+    if (result.ok && result.entry) {
+      state.undoAction = { kind: "remove", id: result.entry.id };
+      state.lastSavedIds = [result.entry.id];
+    }
+    applyLedger(result, null, { skipToast: true });
+    toast(savedToast(shown + " × " + addQty), { undo: true, edit: true });
   }
 
   function setMenuQty(n) {
@@ -3643,7 +5000,7 @@
 
   /* ---------- Voice (one-shot) ---------- */
   function recLang() {
-    return state.settings.voiceLang === "ta-IN" ? "ta-IN" : "en-IN";
+    return normalizeVoiceLang(state.settings.voiceLang, curLang());
   }
 
   function syncVoicePanel() {
@@ -3663,16 +5020,20 @@
 
   function showVoiceError(code) {
     const msg = L.voiceErrorMessage(code);
+    const l = curLang();
+    const primary = msg[l] || msg.en;
     const box = document.getElementById("voiceError");
+    const line = l === "en" ? msg.en : primary + " / " + msg.en;
+    if (l !== "en") PAIRS.set(line, [primary, msg.en]);
     if (!box) {
-      toast(msg.ta + " / " + msg.en);
+      toast(line);
       return;
     }
-    document.getElementById("voiceErrorTa").textContent = msg.ta;
-    document.getElementById("voiceErrorEn").textContent = msg.en;
+    document.getElementById("voiceErrorTa").textContent = primary;
+    document.getElementById("voiceErrorEn").textContent = l === "en" ? "" : msg.en;
     box.hidden = false;
     syncVoicePanel();
-    toast(msg.ta);
+    toast(line);
   }
 
   function showLive() {
@@ -3681,8 +5042,8 @@
     const inter = escapeHtml(state.interimText.trim());
     if (!fin && !inter) {
       box.innerHTML = state.listening
-        ? '<span class="ta">கேட்கிறேன்…</span><span class="en"> / Listening…</span>'
-        : '<span class="ta">பேசுங்கள் அல்லது ஒரு வரியில் எழுதுங்கள்</span><span class="en"> / Speak or type one line</span>';
+        ? H("கேட்கிறேன்… ஒரே வாக்கியத்தில் சொல்லுங்கள்", "Listening… say it in one sentence")
+        : H("பேசுங்கள் அல்லது ஒரு வரியில் எழுதுங்கள்", "Speak or type one line");
       return;
     }
     box.innerHTML = (fin ? fin + " " : "") + (inter ? '<span class="interim">' + inter + "</span>" : "");
@@ -3705,12 +5066,12 @@
       state.recognition = null;
     }
     document.getElementById("micBig").classList.remove("listening");
-    document.getElementById("micLabel").textContent = "பேசு";
+    document.getElementById("micLabel").textContent = P("பேசு", "Speak");
     syncVoicePanel();
     const text = (state.finalText + " " + state.interimText).replace(/\s+/g, " ").trim();
     showLive();
     if (!was) return;
-    if (text) openConfirmation(text, { speechConfidence: state.speechConfidence });
+    if (text) runCommand(text, { source: "voice", speechConfidence: state.speechConfidence });
     else if (reason && reason !== "user") showVoiceError(reason === true ? "no-speech" : reason);
   }
 
@@ -3742,7 +5103,7 @@
     state.speechConfidence = null;
     state.listening = true;
     document.getElementById("micBig").classList.add("listening");
-    document.getElementById("micLabel").textContent = "நிறுத்து";
+    document.getElementById("micLabel").textContent = P("நிறுத்து", "Stop");
     syncVoicePanel();
     showLive();
 
@@ -3826,55 +5187,112 @@
     }, 200);
   }
 
-  /* ---------- Confirmation card ---------- */
-  function checkTag() {
-    return '<span class="check-tag">சரிபாருங்கள் / Please check</span>';
+  /* ---------- v7: one command → save directly, toast with Undo + Edit ---------- */
+  function entryLine(e) {
+    const sign = e.type === "income" ? "+" : "−";
+    const amt = formatMoney(Math.abs(Number(e.amount)));
+    let label = itemName(e.item) || "";
+    if (e.qty != null && e.unitPrice != null && e.item) label = label + " ×" + e.qty;
+    const who = e.customerName ? " · 👤 " + e.customerName : "";
+    const pm = L.payModeOf(e);
+    const pay = pm !== "cash" ? " · " + payLabel(pm) : "";
+    return sign + amt + " " + label + who + pay;
   }
 
-  function rowHtml(label, value, unsure) {
-    return '<div class="cf-row' + (unsure ? " uncertain" : "") + '"><span>' + escapeHtml(label) +
-      "</span><strong>" + escapeHtml(String(value)) + "</strong>" + (unsure ? checkTag() : "") + "</div>";
+  /**
+   * Parse a spoken / typed sentence and save every entry in it at once.
+   * Only when no amount can be read at all do we open the editable sheet.
+   */
+  function runCommand(text, opts) {
+    opts = opts || {};
+    const raw = String(text || "").trim();
+    if (!raw) return false;
+    const result = L.parseCommand(raw, { menu: state.settings.menu, speechConfidence: opts.speechConfidence });
+    if (!result.ok || !result.entries.length) {
+      openConfirmation(raw);
+      return false;
+    }
+    const led = ledger();
+    const ids = [];
+    const saved = [];
+    const skipped = (result.failed || []).map((f) => f.raw).filter(Boolean);
+    let last = null;
+    for (const parsed of result.entries) {
+      const data = L.parsedToEntry(parsed, state.date);
+      const res = led.add(data);
+      if (res.ok) {
+        ids.push(res.entry.id);
+        saved.push(res.entry);
+        last = res;
+      } else {
+        skipped.push(parsed.raw || parsed.item || "");
+      }
+    }
+    if (!ids.length) {
+      openConfirmation(raw);
+      return false;
+    }
+    state.undoEntry = null;
+    state.undoAction = { kind: "removeMany", ids: ids.slice() };
+    state.lastSavedIds = ids.slice();
+    state.entries = last.entries;
+    saveStore();
+    render();
+    const q = document.getElementById("quickEntry");
+    if (q && opts.source !== "voice") q.value = "";
+    const head = H("சேமிக்கப்பட்டது ✓", "Saved ✓").replace(/✓/g, saved.length > 1 ? "✓ (" + saved.length + ")" : "✓");
+    let html = head;
+    html += saved.map((e) => '<span class="t-line">' + escapeHtml(entryLine(e)) + "</span>").join("");
+    if (result.paired && result.margin != null) {
+      html += '<span class="t-line">' + escapeHtml(S(Number(result.margin) < 0 ? "நஷ்டம்" : "லாபம்", Number(result.margin) < 0 ? "Loss" : "Profit")) + " " + formatMoney(result.margin) + "</span>";
+    }
+    if (skipped.length) {
+      html += '<span class="t-warn">' + escapeHtml(S("புரியவில்லை, சேமிக்கவில்லை", "Not understood, not saved")) + ": " + escapeHtml(skipped.join(" · ")) + "</span>";
+    }
+    toast(html, { html: true, undo: true, edit: true, ms: UNDO_MS });
+    return true;
   }
 
+  function editLastSaved() {
+    const ids = (state.lastSavedIds || []).filter((id) => state.entries.some((e) => e.id === id));
+    hideToast();
+    if (!ids.length) return;
+    if (ids.length === 1) {
+      const entry = state.entries.find((e) => e.id === ids[0]);
+      state.undoAction = null;
+      openForm({ mode: "edit", type: entry.type, id: entry.id });
+      return;
+    }
+    // Several saved at once: show them in the list and let the person tap ✏️ on the one to fix.
+    state.tab = "Today";
+    render();
+    let first = null;
+    ids.forEach((id) => {
+      const row = document.querySelector('#entryList .row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+      if (row) {
+        row.classList.remove("flash");
+        void row.offsetWidth;
+        row.classList.add("flash");
+        if (!first) first = row;
+      }
+    });
+    if (first && first.scrollIntoView) first.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast(S("✏️ தட்டி திருத்துங்கள்", "Tap ✏️ on a row to edit it"));
+  }
+
+  /* ---------- Fallback sheet (only when no amount could be read) ---------- */
   function renderConfirmParsed(text) {
-    const result = L.parseUtterances(text, { menu: state.settings.menu, speechConfidence: state.speechConfidence });
+    const result = L.parseCommand(text, { menu: state.settings.menu });
     state.pendingParse = result;
     const err = document.getElementById("confirmError");
     if (err) err.textContent = "";
     const body = document.getElementById("confirmBody");
     const entries = (result && result.entries) || [];
     if (!result || !result.ok || !entries.length) {
-      body.innerHTML = '<p><span class="ta">புரியவில்லை.</span> <span class="en">I could not fully understand this. Edit the sentence above, or tap Edit and fill the form.</span></p>';
+      body.innerHTML = '<p class="help">' + H("தொகை புரியவில்லை. மேலே உள்ள வாக்கியத்தைத் திருத்துங்கள் (எ.கா. 100 டீ), அல்லது படிவத்தில் நிரப்புங்கள்.", "No amount found. Fix the sentence above (e.g. 100 tea), or fill the form.") + "</p>";
       return result;
     }
-    const banner = result.needsCheck || entries.some((e) => e.needsCheck)
-      ? '<p class="check-tag" style="margin:0 0 8px">சில வயல்களை யூகித்தேன் — சரிபாருங்கள் / Please check — some fields were guessed</p>'
-      : "";
-    const blocks = entries.map((parsed, i) => {
-      const u = parsed.uncertain || {};
-      const typeTa = parsed.type === "income" ? "வரவு" : "செலவு";
-      const typeEn = parsed.type === "income" ? "Income" : "Expense";
-      const rows = [
-        rowHtml("வகை / Type", typeTa + " / " + typeEn, u.type),
-        rowHtml("பொருள் / Item", parsed.item + (parsed.itemEn ? " (" + parsed.itemEn + ")" : ""), u.item),
-        parsed.qty != null ? rowHtml("அளவு / Qty", parsed.qty + (parsed.unit ? " " + parsed.unit : ""), u.qty) : "",
-        parsed.unitPrice != null ? rowHtml("ஒரு அலகு / Unit price", formatMoney(parsed.unitPrice), u.unitPrice) : "",
-        rowHtml("மொத்தம் / Total", formatMoney(parsed.amount), u.amount),
-        rowHtml("பணம் / Payment", PAY_LABEL[parsed.payMode].ta + " / " + PAY_LABEL[parsed.payMode].en, false),
-        parsed.customerName ? rowHtml("பெயர் / Name", parsed.customerName, false) : "",
-        parsed.vehicleNo ? rowHtml("வாகனம் / Vehicle", parsed.vehicleNo, false) : "",
-        parsed.note ? rowHtml("குறிப்பு / Note", parsed.note, false) : "",
-        u.speech ? rowHtml("குரல் / Voice", "தெளிவு குறைவு / Low confidence", true) : ""
-      ].join("");
-      const head = entries.length > 1 ? '<div style="font-weight:700;margin-bottom:4px">' + (i + 1) + " / " + entries.length + "</div>" : "";
-      return '<div class="confirm-line">' + head + rows + "</div>";
-    }).join("");
-    const marginBan = result.paired
-      ? '<div class="pair-margin' + (Number(result.margin) < 0 ? " neg" : "") + '"><span class="ta">' +
-        (Number(result.margin) < 0 ? "நஷ்டம் " : "லாபம் ") + formatMoney(result.margin) +
-        '</span><span class="en">' + (Number(result.margin) < 0 ? "Loss" : "Profit") + " " + formatMoney(result.margin) + "</span></div>"
-      : "";
-    body.innerHTML = banner + marginBan + '<div class="confirm-lines">' + blocks + "</div>";
+    body.innerHTML = '<div class="confirm-lines">' + entries.map((e) => '<div class="confirm-line">' + escapeHtml(entryLine(e)) + "</div>").join("") + "</div>";
     return result;
   }
 
@@ -3886,8 +5304,8 @@
     document.getElementById("confirmCard").hidden = false;
     document.getElementById("backdrop").hidden = false;
     setTimeout(() => {
-      const btn = document.getElementById("confirmSave");
-      if (btn && btn.focus) btn.focus({ preventScroll: true });
+      const t = document.getElementById("confirmTranscript");
+      if (t && t.focus) t.focus({ preventScroll: true });
     }, 80);
   }
 
@@ -3901,53 +5319,27 @@
 
   function saveParsed() {
     const ta = document.getElementById("confirmTranscript");
-    if (ta) renderConfirmParsed(ta.value);
-    const parsed = state.pendingParse;
+    const text = ta ? ta.value : "";
+    const result = L.parseCommand(text, { menu: state.settings.menu });
     const err = document.getElementById("confirmError");
-    err.textContent = "";
-    const entries = parsed && parsed.entries ? parsed.entries : [];
-    if (!parsed || !parsed.ok || !entries.length) {
-      err.textContent = "முதலில் வாக்கியத்தைத் திருத்தவும் அல்லது படிவத்தில் நிரப்பவும் / Edit the sentence first, or fill the form";
+    setMsg(err, "");
+    if (!result.ok) {
+      setMsg(err, S("முதலில் வாக்கியத்தில் தொகையைச் சேர்க்கவும் அல்லது படிவத்தில் நிரப்பவும்", "Add an amount to the sentence first, or fill the form"));
       return;
     }
-    let led = ledger();
-    let last = null;
-    for (let i = 0; i < entries.length; i++) {
-      const data = L.parsedToEntry(entries[i], state.date);
-      last = led.add(data);
-      if (!last.ok) {
-        if (last.errors.indexOf("note-required-for-negative") !== -1) {
-          err.textContent = "மைனஸ் தொகைக்குக் குறிப்பு தேவை / A note is required for minus amounts";
-          return;
-        }
-        if (last.errors.indexOf("customer-required-for-credit") !== -1) {
-          err.textContent = "கடனுக்குப் பெயர் தேவை — திருத்து அழுத்தவும் / Credit needs a name — tap Edit";
-          return;
-        }
-        err.textContent = "சேமிக்க முடியவில்லை / Could not save";
-        return;
-      }
-      led = L.createLedger(last.entries);
-    }
-    const pairMsg = parsed.paired
-      ? "சேமிக்கப்பட்டது ✓  லாபம் " + formatMoney(parsed.margin)
-      : (entries.length > 1 ? ("சேமிக்கப்பட்டது ✓  " + entries.length) : "சேமிக்கப்பட்டது ✓");
-    applyLedger(last, pairMsg);
     closeConfirm();
+    runCommand(text, { source: "sheet" });
   }
 
   function editParsed() {
     const parsed = state.pendingParse;
-    const first = parsed && parsed.entries && parsed.entries[0];
+    const first = parsed && parsed.first;
     const raw = (document.getElementById("confirmTranscript") || {}).value || (parsed && parsed.raw) || "";
-    if (parsed && parsed.entries && parsed.entries.length > 1) {
-      document.getElementById("confirmError").textContent = "ஒன்றுக்கும் மேற்பட்ட பொருள் — மேலே உள்ள வாக்கியத்தைத் திருத்தவும் / Several items — edit the sentence above";
-      document.getElementById("confirmTranscript").focus();
-      return;
-    }
     closeConfirm();
     const type = first && first.type === "expense" ? "expense" : "income";
-    openForm({ mode: "add", type, seed: first && first.ok ? first : { item: "", note: raw, amount: first && first.amount } });
+    const seed = first ? Object.assign({}, first, { amount: first.amount }) : { item: "", note: raw };
+    if (!first || !first.item || first.item === "வரவு" || first.item === "செலவு") seed.note = raw;
+    openForm({ mode: "add", type, seed });
   }
 
   /* ---------- Form ---------- */
@@ -3959,8 +5351,8 @@
     const type = opts.type;
     const seed = opts.seed || (opts.id ? state.entries.find((e) => e.id === opts.id) : null);
     document.getElementById("formTitle").innerHTML = opts.mode === "edit"
-      ? (type === "income" ? "வரவைத் திருத்து / Edit income" : "செலவைத் திருத்து / Edit expense")
-      : type === "income" ? "புதிய வரவு / New income" : "புதிய செலவு / New expense";
+      ? (type === "income" ? H("வரவைத் திருத்து", "Edit income") : H("செலவைத் திருத்து", "Edit expense"))
+      : type === "income" ? H("புதிய வரவு", "New income") : H("புதிய செலவு", "New expense");
     sheet.classList.toggle("expense", type === "expense");
     sheet.classList.toggle("income", type === "income");
     fillChips(type, seed && seed.item);
@@ -4002,7 +5394,11 @@
   function fillChips(type, selected) {
     const items = type === "income" ? SALE_CHIPS : EXPENSE_CHIPS;
     document.getElementById("chips").innerHTML = items
-      .map((c) => `<button type="button" class="chip${c === selected ? " on" : ""}" data-chip="${escapeHtml(c)}">${escapeHtml(c)}</button>`)
+      .map((c) => {
+        const main = itemName(c);
+        const en = itemEnSub(c);
+        return `<button type="button" class="chip${c === selected ? " on" : ""}" data-chip="${escapeHtml(c)}"><span class="tl"><span class="ta">${escapeHtml(main)}</span>${en ? `<span class="en">${escapeHtml(en)}</span>` : ""}</span></button>`;
+      })
       .join("");
   }
 
@@ -4010,7 +5406,8 @@
     document.querySelectorAll("#payChips .pay-chip").forEach((b) => {
       b.classList.toggle("on", b.getAttribute("data-pay") === state.formPay);
     });
-    document.getElementById("customerWrap").hidden = state.formPay !== "credit";
+    const lab = document.getElementById("customerLabel");
+    if (lab) lab.innerHTML = state.formPay === "credit" ? H("யாருக்குக் கடன்? (பெயர்)", "Who owes? (name)") : H("பெயர் (விருப்பம்)", "Name (optional)");
   }
 
   function updateHints() {
@@ -4075,11 +5472,11 @@
     const refAmountF = fieldNumber("fldRefAmount");
     const amountF = fieldNumber("fldAmount");
     const useBulk = document.getElementById("bulkToggle").checked;
-    if (!qtyF.empty && qtyF.value == null) return { ok: false, error: "அளவு எண்ணைப் புரிந்துகொள்ளவில்லை / Could not read quantity." };
-    if (!unitPriceF.empty && unitPriceF.value == null) return { ok: false, error: "விலையைப் புரிந்துகொள்ளவில்லை / Could not read unit price." };
-    if (useBulk && !refQtyF.empty && refQtyF.value == null) return { ok: false, error: "குறிப்பு அளவைப் புரிந்துகொள்ளவில்லை / Could not read reference qty." };
-    if (useBulk && !refAmountF.empty && refAmountF.value == null) return { ok: false, error: "குறிப்பு விலையைப் புரிந்துகொள்ளவில்லை / Could not read reference price." };
-    if (!amountF.empty && amountF.value == null) return { ok: false, error: "தொகையைப் புரிந்துகொள்ளவில்லை / Could not read the amount (try 150 or நூற்றி ஐம்பது)." };
+    if (!qtyF.empty && qtyF.value == null) return { ok: false, error: S("அளவு எண்ணைப் புரிந்துகொள்ளவில்லை", "Could not read quantity.") };
+    if (!unitPriceF.empty && unitPriceF.value == null) return { ok: false, error: S("விலையைப் புரிந்துகொள்ளவில்லை", "Could not read unit price.") };
+    if (useBulk && !refQtyF.empty && refQtyF.value == null) return { ok: false, error: S("குறிப்பு அளவைப் புரிந்துகொள்ளவில்லை", "Could not read reference qty.") };
+    if (useBulk && !refAmountF.empty && refAmountF.value == null) return { ok: false, error: S("குறிப்பு விலையைப் புரிந்துகொள்ளவில்லை", "Could not read reference price.") };
+    if (!amountF.empty && amountF.value == null) return { ok: false, error: S("தொகையைப் புரிந்துகொள்ளவில்லை (எ.கா. 150)", "Could not read the amount (try 150).") };
     let amount = amountF.value;
     let unitPrice = unitPriceF.value;
     const calc = L.computeAmount({
@@ -4117,28 +5514,28 @@
     const isEdit = state.form && state.form.mode === "edit";
     const id = state.form && state.form.id;
     const read = readForm();
-    if (!read.ok) { errBox.textContent = read.error; return; }
+    if (!read.ok) { setMsg(errBox, read.error); return; }
     const result = isEdit ? ledger().edit(id, read.data) : ledger().add(read.data);
     if (!result.ok) {
       if (result.errors.indexOf("note-required-for-negative") !== -1) {
-        errBox.textContent = "கழிவு / மைனஸ் தொகைக்குக் காரணக் குறிப்பு அவசியம். / A note is required for minus amounts.";
+        setMsg(errBox, S("கழிவு / மைனஸ் தொகைக்குக் காரணக் குறிப்பு அவசியம்.", "A note is required for minus amounts."));
         document.getElementById("fldNote").focus();
         return;
       }
       if (result.errors.indexOf("customer-required-for-credit") !== -1) {
-        errBox.textContent = "கடனுக்கு வாடிக்கையாளர் பெயர் தேவை. / Credit needs the customer's name.";
+        setMsg(errBox, S("கடனுக்கு வாடிக்கையாளர் பெயர் தேவை.", "Credit needs the customer's name."));
         document.getElementById("fldCustomer").focus();
         return;
       }
       if (result.errors.indexOf("amount") !== -1) {
-        errBox.textContent = "தொகையை எழுதவும். / Please enter an amount.";
+        setMsg(errBox, S("தொகையை எழுதவும்.", "Please enter an amount."));
         document.getElementById("fldAmount").focus();
         return;
       }
-      errBox.textContent = "பதிவைச் சேமிக்க முடியவில்லை. / Could not save this entry.";
+      setMsg(errBox, S("பதிவைச் சேமிக்க முடியவில்லை.", "Could not save this entry."));
       return;
     }
-    applyLedger(result, "சேமிக்கப்பட்டது ✓");
+    applyLedger(result, savedToast());
     closeForm();
   }
 
@@ -4146,12 +5543,13 @@
     const entry = state.entries.find((e) => e.id === id);
     if (!entry) return;
     state.pendingDeleteId = id;
-    const kind = entry.type === "income" ? "வரவு / Income" : "செலவு / Expense";
+    const kind = entry.type === "income" ? S("வரவு", "Income") : S("செலவு", "Expense");
     document.getElementById("modalBody").innerHTML =
-      `<p class="modal-q">இந்தப் பதிவை நீக்க வேண்டுமா?<br><span class="en" style="font-weight:700">Delete this entry?</span></p>` +
-      `<p class="modal-d"><strong>${kind} · ${escapeHtml(entry.item || "—")}</strong><br>${formatMoney(entry.amount)}` +
-      (entry.note ? `<br>குறிப்பு / Note: ${escapeHtml(entry.note)}` : "") +
-      `</p><p class="modal-warn">நீக்கிய பின் இன்றைய வரவு, செலவு, லாபம் மீண்டும் கணக்கிடப்படும். / Income, expense and profit will be recalculated.</p>`;
+      `<div class="modal-q">${H("இந்தப் பதிவை நீக்க வேண்டுமா?", "Delete this entry?")}</div>` +
+      `<p class="modal-d"><strong>${escapeHtml(kind)} · ${escapeHtml(itemName(entry.item) || "—")}</strong><br>${formatMoney(entry.amount)}` +
+      (entry.customerName ? `<br>👤 ${escapeHtml(entry.customerName)}` : "") +
+      (entry.note ? `<br>${escapeHtml(S("குறிப்பு", "Note"))}: ${escapeHtml(entry.note)}` : "") +
+      `</p><div class="modal-warn">${H("நீக்கிய பின் இன்றைய வரவு, செலவு, லாபம் மீண்டும் கணக்கிடப்படும்.", "Income, expense and profit will be recalculated.")}</div>`;
     document.getElementById("modal").hidden = false;
     document.getElementById("backdrop").hidden = false;
   }
@@ -4161,12 +5559,13 @@
     const removed = state.entries.find((e) => e.id === state.pendingDeleteId);
     const result = ledger().remove(state.pendingDeleteId);
     closeModal();
-    if (!result.ok) { toast("பதிவை நீக்க முடியவில்லை / Could not delete"); return; }
+    if (!result.ok) { toast(S("பதிவை நீக்க முடியவில்லை", "Could not delete")); return; }
     const copy = removed ? { ...removed } : (result.removed ? { ...result.removed } : null);
     state.undoEntry = copy;
     state.undoAction = copy ? { kind: "restore", entry: copy } : null;
+    state.lastSavedIds = [];
     applyLedger(result, null);
-    toast("அழிக்கப்பட்டது / Deleted", { undo: true, ms: 5000 });
+    toast(S("அழிக்கப்பட்டது", "Deleted"), { undo: true });
   }
 
   function closeModal() {
@@ -4181,12 +5580,12 @@
   function askMarkPaid(name) {
     state.pendingPaidName = name;
     document.getElementById("modalBody").innerHTML =
-      `<p class="modal-q">${escapeHtml(name)} செலுத்திவிட்டாரா?<br><span class="en" style="font-weight:700">Mark all of this credit as paid?</span></p>` +
-      `<p class="modal-warn">வரவு எண் மாறாது — கடன் மட்டும் முடியும். / Income total stays the same; the credit book is cleared.</p>`;
+      `<div class="modal-q"><strong>${escapeHtml(name)}</strong> — ${H("கடன் முழுவதும் செலுத்திவிட்டாரா?", "Mark all of this credit as paid?")}</div>` +
+      `<div class="modal-warn">${H("வரவு எண் மாறாது — கடன் மட்டும் முடியும்.", "Income total stays the same; the credit book is cleared.")}</div>`;
     const yes = document.getElementById("confirmDelete");
     yes.classList.remove("danger");
     yes.classList.add("ok");
-    yes.innerHTML = '<span class="bi" style="align-items:center"><span class="ta">ஆம், செலுத்தினார்</span><span class="en">Yes, paid</span></span>';
+    yes.innerHTML = H("ஆம், செலுத்தினார்", "Yes, paid");
     document.getElementById("modal").hidden = false;
     document.getElementById("backdrop").hidden = false;
   }
@@ -4195,11 +5594,11 @@
     const yes = document.getElementById("confirmDelete");
     yes.classList.add("danger");
     yes.classList.remove("ok");
-    yes.innerHTML = '<span class="bi" style="align-items:center"><span class="ta">ஆம், நீக்கு</span><span class="en">Yes, delete</span></span>';
+    yes.innerHTML = H("ஆம், நீக்கு", "Yes, delete");
   }
 
   function openSettings() {
-    document.getElementById("setShopName").value = state.settings.shopName || "";
+    document.getElementById("setShopName").value = shopTitle();
     renderMenuEditor();
     document.getElementById("settings").hidden = false;
     document.getElementById("backdrop").hidden = false;
@@ -4214,15 +5613,32 @@
       box.hidden = true;
       return;
     }
-    const names = low.map((s) => (s.nameTa || s.nameEn) + " (" + s.qty + " " + s.unit + ")").join(", ");
-    document.getElementById("stockAlertTa").textContent = "குறைந்த இருப்பு: " + names;
-    document.getElementById("stockAlertEn").textContent = "Low stock — please check: " + names;
+    const names = low.map((s) => stockName(s) + " (" + s.qty + " " + unitName(s.unit) + ")").join(", ");
+    document.getElementById("stockAlertTa").textContent = P("குறைந்த இருப்பு", "Low stock") + ": " + names;
+    document.getElementById("stockAlertEn").textContent = curLang() === "en" ? "" : "Low stock — please check";
+    document.getElementById("stockAlertEn").hidden = curLang() === "en";
     box.hidden = false;
     box.onclick = () => {
       state.tab = "Shop";
       state.shopSection = "stock";
       render();
     };
+  }
+
+  function stockName(s) {
+    const l = curLang();
+    if (l === "en") return s.nameEn || s.nameTa;
+    if (l === "ta") return s.nameTa || s.nameEn;
+    const tr = L.itemLabel(s.nameTa, l);
+    return tr !== s.nameTa ? tr : (s.nameEn || s.nameTa);
+  }
+
+  function menuName(m) {
+    const l = curLang();
+    if (l === "en") return m.nameEn || m.nameTa;
+    if (l === "ta") return m.nameTa || m.nameEn;
+    const tr = L.itemLabel(m.nameTa, l);
+    return tr !== m.nameTa ? tr : (m.nameEn || m.nameTa);
   }
 
   function renderShop() {
@@ -4243,33 +5659,33 @@
     const box = document.getElementById("stockList");
     const items = state.settings.stock || [];
     if (!items.length) {
-      box.innerHTML = "<p class='help'>இருப்புப் பொருள் இல்லை. / No stock items yet.</p>";
+      box.innerHTML = "<p class='help'>" + H("இருப்புப் பொருள் இல்லை.", "No stock items yet.") + "</p>";
     } else {
       box.innerHTML = items.map((s) => {
         const tracked = Number(s.qty) !== 0 || (state.settings.stockMoves || []).some((m) => m.itemId === s.id);
         const isLow = tracked && Number(s.qty) <= Number(s.minAlert || 0);
         return `<div class="stock-item">
           <div>
-            <strong>${escapeHtml(s.nameTa || s.nameEn)}</strong>
-            ${s.nameEn && s.nameEn !== s.nameTa ? '<div class="en">' + escapeHtml(s.nameEn) + "</div>" : ""}
-            <div class="help">குறைந்தபட்சம் / Alert at ${escapeHtml(String(s.minAlert))} ${escapeHtml(s.unit)}</div>
+            <strong>${escapeHtml(stockName(s))}</strong>
+            ${curLang() !== "en" && s.nameEn && s.nameEn !== stockName(s) ? '<div class="en">' + escapeHtml(s.nameEn) + "</div>" : ""}
+            <div class="help">${escapeHtml(S("குறைந்தபட்சம்", "Alert at"))} ${escapeHtml(String(s.minAlert))} ${escapeHtml(unitName(s.unit))}</div>
           </div>
           <div style="text-align:right">
-            <span class="badge ${isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(s.unit)}</span>
+            <span class="badge ${isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(unitName(s.unit))}</span>
           </div>
         </div>`;
       }).join("");
     }
     const alertBox = document.getElementById("stockAlertBox");
     if (low.length) {
-      alertBox.textContent = low.map((s) => (s.nameTa || s.nameEn) + " " + s.qty + " " + s.unit).join(", ") + " — சரிபாருங்கள் / Please check";
+      alertBox.innerHTML = escapeHtml(low.map((s) => stockName(s) + " " + s.qty + " " + unitName(s.unit)).join(", ")) + " — " + H("சரிபாருங்கள்", "Please check");
     } else {
-      alertBox.textContent = "அனைத்து பொருட்களும் போதிய அளவில் உள்ளன. / All tracked items are above the alert level.";
+      alertBox.innerHTML = H("அனைத்து பொருட்களும் போதிய அளவில் உள்ளன.", "All tracked items are above the alert level.");
     }
     const sel = document.getElementById("stockItemSel");
     if (sel) {
       const prev = sel.value;
-      sel.innerHTML = items.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.nameTa || s.nameEn)}</option>`).join("");
+      sel.innerHTML = items.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(stockName(s))}</option>`).join("");
       if (prev && items.some((s) => s.id === prev)) sel.value = prev;
     }
   }
@@ -4297,7 +5713,7 @@
     const err = document.getElementById("stockMoveError");
     err.textContent = "";
     if (!(qty > 0)) {
-      err.textContent = "அளவைப் போடவும் / Enter a quantity";
+      setMsg(err, S("அளவைப் போடவும்", "Enter a quantity"));
       return;
     }
     if (kind === "out") {
@@ -4305,9 +5721,9 @@
         itemId, qty, date: state.date, note: document.getElementById("stockNote").value
       });
       if (!res.ok) {
-        err.textContent = res.errors && res.errors[0] === "insufficient-stock"
-          ? "போதிய இருப்பு இல்லை / Not enough stock"
-          : "பயன்படுத்த முடியவில்லை / Could not use stock";
+        setMsg(err, res.errors && res.errors[0] === "insufficient-stock"
+          ? S("போதிய இருப்பு இல்லை", "Not enough stock")
+          : S("பயன்படுத்த முடியவில்லை", "Could not use stock"));
         return;
       }
       state.settings.stock = res.stock;
@@ -4315,14 +5731,14 @@
       saveStore();
       document.getElementById("stockMoveForm").hidden = true;
       render();
-      toast("சேமிக்கப்பட்டது ✓");
+      toast(savedToast());
       return;
     }
     const amtRaw = document.getElementById("stockAmount").value.trim();
     const amount = amtRaw ? L.parseTamilNumber(amtRaw) : null;
     const logExpense = document.getElementById("stockLogExpense").checked;
     if (logExpense && !(amount > 0)) {
-      err.textContent = "செலவுக்குத் தொகை தேவை / Enter an amount to log the expense";
+      setMsg(err, S("செலவுக்குத் தொகை தேவை", "Enter an amount to log the expense"));
       return;
     }
     const res = L.addStock(state.settings.stock, state.settings.stockMoves, {
@@ -4330,7 +5746,7 @@
       amount: amount, logExpense: logExpense
     });
     if (!res.ok) {
-      err.textContent = "சேர்க்க முடியவில்லை / Could not add stock";
+      setMsg(err, S("சேர்க்க முடியவில்லை", "Could not add stock"));
       return;
     }
     state.settings.stock = res.stock;
@@ -4338,7 +5754,7 @@
     if (res.expense) {
       const led = ledger().add(res.expense);
       if (!led.ok) {
-        err.textContent = "செலவு சேரவில்லை / Could not log expense";
+        setMsg(err, S("செலவு சேரவில்லை", "Could not log expense"));
         saveStore();
         render();
         return;
@@ -4348,7 +5764,7 @@
     saveStore();
     document.getElementById("stockMoveForm").hidden = true;
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function submitNewStock() {
@@ -4360,7 +5776,7 @@
       minAlert: L.parseTamilNumber(document.getElementById("newStockMin").value) || 0
     });
     if (!res.ok) {
-      toast("பெயரைப் போடவும் / Enter a name");
+      toast(S("பெயரைப் போடவும்", "Enter a name"));
       return;
     }
     state.settings.stock = res.stock;
@@ -4369,29 +5785,29 @@
     document.getElementById("newStockTa").value = "";
     document.getElementById("newStockEn").value = "";
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function renderMargins() {
     const day = L.dayItemProfits(state.entries, state.date, state.settings.menu);
     const dayBox = document.getElementById("dayMarginBox");
     if (!day.withSales.length) {
-      dayBox.innerHTML = "<p class='help'>இன்று மெனு விற்பனை இல்லை. / No menu sales today.</p>";
+      dayBox.innerHTML = "<p class='help'>" + H("இன்று மெனு விற்பனை இல்லை.", "No menu sales today.") + "</p>";
     } else {
       const rows = day.withSales.map((r) => {
         const profit = r.profitTotal == null ? "—" : formatMoney(r.profitTotal);
-        return `<div class="margin-item"><div><strong>${escapeHtml(r.nameTa || r.nameEn)}</strong><div class="help">${r.qtySold} × ${formatMoney(r.price)} − ${r.costPrice == null ? "செலவு இல்லை / no cost set" : formatMoney(r.costPrice)}</div></div><div style="text-align:right"><strong>${profit}</strong></div></div>`;
+        return `<div class="margin-item"><div><strong>${escapeHtml(menuName(r))}</strong><div class="help">${r.qtySold} × ${formatMoney(r.price)} − ${r.costPrice == null ? escapeHtml(S("செலவு இல்லை", "no cost set")) : formatMoney(r.costPrice)}</div></div><div style="text-align:right"><strong>${profit}</strong></div></div>`;
       }).join("");
-      dayBox.innerHTML = rows + `<p style="margin:10px 0 0;font-weight:700">இன்று பொருள் லாபம் / Today's item profit: ${formatMoney(day.totalProfit)}</p>`;
+      dayBox.innerHTML = rows + `<p style="margin:10px 0 0;font-weight:700">${TL("இன்று பொருள் லாபம்", "Today's item profit")}: ${formatMoney(day.totalProfit)}</p>`;
     }
     const list = document.getElementById("marginList");
     list.innerHTML = L.itemMargins(state.settings.menu).map((m, i) => {
       const profit = m.costMissing ? "—" : formatMoney(m.unitProfit);
       const pct = m.marginPct == null ? "" : ` (${m.marginPct}%)`;
       return `<div class="margin-item" data-idx="${i}">
-        <div><strong>${escapeHtml(m.nameTa || m.nameEn)}</strong><div class="help">விலை / Price ${formatMoney(m.price)}</div></div>
+        <div><strong>${escapeHtml(menuName(m))}</strong><div class="help">${escapeHtml(S("விலை", "Price"))} ${formatMoney(m.price)}</div></div>
         <div style="text-align:right">
-          <label class="lab" style="margin:0;font-size:12px">செலவு / Cost</label>
+          <label class="lab" style="margin:0;font-size:12px">${escapeHtml(S("செலவு", "Cost"))}</label>
           <input class="cost-in" data-cost="${escapeHtml(m.id)}" inputmode="decimal" value="${m.costMissing ? "" : escapeHtml(String(m.costPrice))}">
           <div style="font-weight:700;color:var(--income);margin-top:4px">${profit}${pct}</div>
         </div>
@@ -4415,36 +5831,36 @@
     state.settings.menu = menu;
     saveStore();
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function renderStaff() {
     const box = document.getElementById("staffList");
     const sums = L.staffSummaries(state.settings.staff, state.settings.wages);
     if (!sums.length) {
-      box.innerHTML = "<p class='help'>பணியாளர் இல்லை. / No staff added yet.</p>";
+      box.innerHTML = "<p class='help'>" + H("பணியாளர் இல்லை.", "No staff added yet.") + "</p>";
       return;
     }
     box.innerHTML = sums.map((w) => {
       const bal = w.balanceOwed;
       const balLabel = bal > 0
-        ? "பாக்கி / Owed to staff " + formatMoney(bal)
+        ? S("பாக்கி", "Owed to staff") + " " + formatMoney(bal)
         : bal < 0
-          ? "முன்பணம் மீதி / Staff owes " + formatMoney(-bal)
-          : "பாக்கி இல்லை / Settled";
+          ? S("முன்பணம் மீதி", "Staff owes") + " " + formatMoney(-bal)
+          : S("பாக்கி இல்லை", "Settled");
       const unpaidBtns = (state.settings.wages || []).filter((r) => r.staffId === w.id && !r.paid && r.kind !== "advance").map((r) =>
-        `<button type="button" data-payunpaid="${escapeHtml(r.id)}">பாக்கி செலுத்து ${formatMoney(r.amount)} / Pay due</button>`
+        `<button type="button" data-payunpaid="${escapeHtml(r.id)}">${H("பாக்கி செலுத்து", "Pay due")} ${formatMoney(r.amount)}</button>`
       ).join("");
       return `<div class="staff-item">
         <div style="flex:1">
           <strong>${escapeHtml(w.name)}</strong>
-          <div class="help">தினம் / Daily ${formatMoney(w.dailyWage)} · வாரம் / Weekly ${formatMoney(w.weeklyWage || 0)}</div>
-          <div class="help">செலுத்திய கூலி / Wages paid ${formatMoney(w.wagesPaid)} · முன்பணம் / Advance ${formatMoney(w.advances)}</div>
-          <div style="font-weight:700;margin-top:4px">${balLabel}</div>
+          <div class="help">${escapeHtml(S("தினம்", "Daily"))} ${formatMoney(w.dailyWage)} · ${escapeHtml(S("வாரம்", "Weekly"))} ${formatMoney(w.weeklyWage || 0)}</div>
+          <div class="help">${escapeHtml(S("செலுத்திய கூலி", "Wages paid"))} ${formatMoney(w.wagesPaid)} · ${escapeHtml(S("முன்பணம்", "Advance"))} ${formatMoney(w.advances)}</div>
+          <div style="font-weight:700;margin-top:4px">${escapeHtml(balLabel)}</div>
           <div class="shop-actions">
-            <button type="button" data-wage="daily" data-staff="${escapeHtml(w.id)}">இன்றைய கூலி / Daily</button>
-            <button type="button" data-wage="weekly" data-staff="${escapeHtml(w.id)}">வாரக் கூலி / Weekly</button>
-            <button type="button" data-wage="advance" data-staff="${escapeHtml(w.id)}">முன்பணம் / Advance</button>
+            <button type="button" data-wage="daily" data-staff="${escapeHtml(w.id)}">${H("இன்றைய கூலி", "Daily wage")}</button>
+            <button type="button" data-wage="weekly" data-staff="${escapeHtml(w.id)}">${H("வாரக் கூலி", "Weekly wage")}</button>
+            <button type="button" data-wage="advance" data-staff="${escapeHtml(w.id)}">${H("முன்பணம்", "Advance")}</button>
             ${unpaidBtns}
           </div>
         </div>
@@ -4465,17 +5881,17 @@
     const paidWrap = document.getElementById("wagePaidWrap");
     const paid = document.getElementById("wagePaid");
     if (kind === "advance") {
-      document.getElementById("wageFormTitle").textContent = member.name + " — முன்பணம் / Advance";
+      document.getElementById("wageFormTitle").textContent = member.name + " — " + S("முன்பணம்", "Advance");
       document.getElementById("wageAmount").value = "";
       paid.checked = true;
       paidWrap.hidden = true;
     } else if (kind === "weekly") {
-      document.getElementById("wageFormTitle").textContent = member.name + " — வாரக் கூலி / Weekly wage";
+      document.getElementById("wageFormTitle").textContent = member.name + " — " + S("வாரக் கூலி", "Weekly wage");
       document.getElementById("wageAmount").value = member.weeklyWage ? String(member.weeklyWage) : "";
       paid.checked = true;
       paidWrap.hidden = false;
     } else {
-      document.getElementById("wageFormTitle").textContent = member.name + " — தினக்கூலி / Daily wage";
+      document.getElementById("wageFormTitle").textContent = member.name + " — " + S("தினக்கூலி", "Daily wage");
       document.getElementById("wageAmount").value = member.dailyWage ? String(member.dailyWage) : "";
       paid.checked = true;
       paidWrap.hidden = false;
@@ -4495,14 +5911,14 @@
       paid: document.getElementById("wageKind").value === "advance" ? true : document.getElementById("wagePaid").checked
     });
     if (!res.ok) {
-      err.textContent = "தொகையைப் போடவும் / Enter an amount";
+      setMsg(err, S("தொகையைப் போடவும்", "Enter an amount"));
       return;
     }
     state.settings.wages = res.wages;
     if (res.expense) {
       const led = ledger().add(res.expense);
       if (!led.ok) {
-        err.textContent = "செலவு சேரவில்லை / Could not add expense";
+        setMsg(err, S("செலவு சேரவில்லை", "Could not add expense"));
         saveStore();
         return;
       }
@@ -4511,25 +5927,25 @@
     saveStore();
     document.getElementById("wageForm").hidden = true;
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function payUnpaidWage(recordId) {
     const res = L.payWageRecord(state.settings.wages, state.settings.staff, recordId);
     if (!res.ok || !res.expense) {
-      toast("செலுத்த முடியவில்லை / Could not pay");
+      toast(S("செலுத்த முடியவில்லை", "Could not pay"));
       return;
     }
     const led = ledger().add(res.expense);
     if (!led.ok) {
-      toast("செலவு சேரவில்லை / Could not add expense");
+      toast(S("செலவு சேரவில்லை", "Could not add expense"));
       return;
     }
     state.settings.wages = res.wages;
     state.entries = led.entries;
     saveStore();
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function submitStaffForm() {
@@ -4541,7 +5957,7 @@
       weeklyWage: L.parseTamilNumber(document.getElementById("staffWeekly").value) || 0
     });
     if (!res.ok) {
-      err.textContent = "பெயரைப் போடவும் / Enter a name";
+      setMsg(err, S("பெயரைப் போடவும்", "Enter a name"));
       return;
     }
     state.settings.staff = res.staff;
@@ -4551,7 +5967,7 @@
     document.getElementById("staffDaily").value = "";
     document.getElementById("staffWeekly").value = "";
     render();
-    toast("சேமிக்கப்பட்டது ✓");
+    toast(savedToast());
   }
 
   function closeSettings() {
@@ -4565,11 +5981,11 @@
     const box = document.getElementById("menuEditor");
     box.innerHTML = (state.settings.menu || []).map((m, i) => `
       <div class="menu-edit" data-idx="${i}">
-        <input data-k="nameTa" value="${escapeHtml(m.nameTa || "")}" placeholder="தமிழ் பெயர் / Tamil name">
+        <input data-k="nameTa" value="${escapeHtml(m.nameTa || "")}" placeholder="${escapeHtml(S("தமிழ் பெயர்", "Local name"))}">
         <input data-k="nameEn" value="${escapeHtml(m.nameEn || "")}" placeholder="English name">
-        <input data-k="price" inputmode="decimal" value="${escapeHtml(String(m.price != null ? m.price : ""))}" placeholder="விலை / Price">
-        <input data-k="costPrice" inputmode="decimal" value="${escapeHtml(m.costPrice == null || m.costPrice === "" ? "" : String(m.costPrice))}" placeholder="செய் செலவு / Making cost">
-        <button type="button" class="btn-del" data-remove="${i}">நீக்கு / Remove</button>
+        <input data-k="price" inputmode="decimal" value="${escapeHtml(String(m.price != null ? m.price : ""))}" placeholder="${escapeHtml(S("விலை", "Price"))}">
+        <input data-k="costPrice" inputmode="decimal" value="${escapeHtml(m.costPrice == null || m.costPrice === "" ? "" : String(m.costPrice))}" placeholder="${escapeHtml(S("செய் செலவு", "Making cost"))}">
+        <button type="button" class="btn-del" data-remove="${i}">${H("நீக்கு", "Remove")}</button>
       </div>`).join("");
   }
 
@@ -4606,7 +6022,7 @@
     a.download = "kadai-tracker-backup-" + L.todayISO() + ".json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast("காப்பு கோப்பு பதிவிறக்கம் ஆனது / Backup downloaded");
+    toast(S("காப்பு கோப்பு பதிவிறக்கம் ஆனது", "Backup downloaded"));
   }
 
   function importBackup(file) {
@@ -4616,7 +6032,7 @@
         const data = JSON.parse(String(reader.result || ""));
         const entries = Array.isArray(data) ? data : data.entries;
         if (!Array.isArray(entries)) throw new Error("bad");
-        if (!confirm("இறக்குமதி செய்தால் தற்போதைய பதிவுகளின் மேல் எழுதப்படலாம். தொடரவா?\nRestore will replace current entries. Continue?")) return;
+        if (!confirm(curLang() === "en" ? "Restore will replace current entries. Continue?" : P("இறக்குமதி செய்தால் தற்போதைய பதிவுகளின் மேல் எழுதப்படலாம். தொடரவா?", "Restore will replace current entries. Continue?") + "\nRestore will replace current entries. Continue?")) return;
         state.entries = entries;
         if (data.settings) {
           applySettingsObject(data.settings);
@@ -4624,9 +6040,9 @@
         saveStore();
         render();
         closeSettings();
-        toast("காப்பு மீட்கப்பட்டது / Backup restored");
+        toast(S("காப்பு மீட்கப்பட்டது", "Backup restored"));
       } catch (e) {
-        toast("இந்தக் கோப்பைப் படிக்க முடியவில்லை / Could not read that file");
+        toast(S("இந்தக் கோப்பைப் படிக்க முடியவில்லை", "Could not read that file"));
       }
     };
     reader.readAsText(file);
@@ -4640,11 +6056,11 @@
     a.download = "kadai-tracker-" + L.todayISO() + ".csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast("CSV பதிவிறக்கம் ஆனது / CSV downloaded");
+    toast(S("CSV பதிவிறக்கம் ஆனது", "CSV downloaded"));
   }
 
   function shareWhatsApp() {
-    const text = L.daySummaryText(state.entries, state.date, state.settings.shopName);
+    const text = L.daySummaryTextLang(state.entries, state.date, shopTitle(), curLang());
     const url = "https://wa.me/?text=" + encodeURIComponent(text);
     window.open(url, "_blank");
   }
@@ -4686,6 +6102,20 @@
       e.preventDefault();
       e.stopPropagation();
       undoDelete();
+    });
+    document.getElementById("toastEdit").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      editLastSaved();
+    });
+    document.querySelectorAll("[data-setlang]").forEach((b) => {
+      b.addEventListener("click", () => setLanguage(b.getAttribute("data-setlang")));
+    });
+    document.querySelectorAll("[data-firstlang]").forEach((b) => {
+      b.addEventListener("click", () => {
+        setLanguage(b.getAttribute("data-firstlang"));
+        document.getElementById("langFirst").hidden = true;
+      });
     });
     document.getElementById("bulkToggle").addEventListener("change", () => {
       document.getElementById("bulkBox").hidden = !document.getElementById("bulkToggle").checked;
@@ -4778,7 +6208,7 @@
         closeModal();
         resetDeleteButtons();
         render();
-        toast(name + " — கடன் முடிந்தது / marked paid");
+        toast(name + " — " + S("கடன் முடிந்தது", "marked paid"));
         return;
       }
       confirmDelete();
@@ -4790,12 +6220,13 @@
     });
     document.getElementById("closeSettings").addEventListener("click", closeSettings);
     document.getElementById("saveSettings").addEventListener("click", () => {
-      state.settings.shopName = document.getElementById("setShopName").value.trim() || "இட்லி தோசை டீ கடை";
+      const typedShop = document.getElementById("setShopName").value.trim();
+      state.settings.shopName = !typedShop || typedShop === shopTitle() && state.settings.shopName === DEFAULT_SHOP_TA ? DEFAULT_SHOP_TA : typedShop;
       state.settings.menu = L.normalizeMenu(readMenuEditor());
       saveStore();
       closeSettings();
       render();
-      toast("சேமிக்கப்பட்டது ✓");
+      toast(savedToast());
     });
     document.getElementById("addMenuItem").addEventListener("click", () => {
       state.settings.menu = readMenuEditor().concat([{ id: "item-" + Date.now(), nameTa: "", nameEn: "", price: 0, unit: "எண்ணிக்கை" }]);
@@ -4856,8 +6287,8 @@
     });
     document.getElementById("quickBtn").addEventListener("click", () => {
       const text = document.getElementById("quickEntry").value.trim();
-      if (!text) { toast("ஒரு வரியில் எழுதுங்கள் / Type one line first"); return; }
-      openConfirmation(text);
+      if (!text) { toast(S("ஒரு வரியில் எழுதுங்கள்", "Type one line first")); return; }
+      runCommand(text, { source: "typed" });
     });
     document.getElementById("quickEntry").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -4918,10 +6349,85 @@
       document.getElementById("voiceNote").hidden = false;
       const vn = document.getElementById("voiceNote");
       const msg = L.voiceErrorMessage(unsup);
-      vn.innerHTML = '<span class="ta">' + msg.ta + '</span><br><span class="en">' + msg.en + "</span>";
+      const l = curLang();
+      vn.innerHTML = l === "en" ? '<span class="ta">' + msg.en + "</span>" : '<span class="ta">' + (msg[l] || msg.en) + '</span><br><span class="en">' + msg.en + "</span>";
       syncVoicePanel();
     }
     showLive();
+    if (!state.settings.lang) document.getElementById("langFirst").hidden = false;
+  }
+
+  /* ---------- v7: language switch ---------- */
+  function setLanguage(lang) {
+    if (LANGS.indexOf(lang) === -1) return;
+    state.settings.lang = lang;
+    state.settings.voiceLang = L.speechLangFor(lang);
+    saveStore();
+    hideToast();
+    render();
+    if (!document.getElementById("settings").hidden) renderMenuEditor();
+    showLive();
+    if (!state.listening) document.getElementById("micLabel").textContent = P("பேசு", "Speak");
+  }
+
+  const PLACEHOLDERS = {
+    quickEntry: {
+      ta: "20000 போடு · 100 ரூபா டீ ரவி பேருக்கு",
+      en: "20000 add · 100 tea Ravi's name · 50 minus",
+      hi: "20000 डालो · रवि के नाम 100 चाय",
+      mr: "20000 टाका · रवीच्या नावावर 100 चहा"
+    },
+    fldItem: { ta: "எ.கா. இட்லி, அரிசி, எண்ணெய்", en: "e.g. idli, rice, oil", hi: "जैसे इडली, चावल, तेल", mr: "उदा. इडली, तांदूळ, तेल" },
+    fldQty: { ta: "3 / மூன்று / moonu", en: "3 / three", hi: "3 / तीन / teen", mr: "3 / तीन" },
+    fldUnitPrice: { ta: "ஐம்பது / 50 / aimbadhu", en: "50 / fifty", hi: "50 / पचास / pachas", mr: "50 / पन्नास" },
+    fldAmount: { ta: "நூற்றி ஐம்பது / 150", en: "150", hi: "150 / डेढ़ सौ", mr: "150 / दीडशे" },
+    fldRefQty: { ta: "பத்து / 10 / pathu", en: "10 / ten", hi: "10 / दस", mr: "10 / दहा" },
+    fldRefAmount: { ta: "நூறு / 100 / nooru", en: "100 / hundred", hi: "100 / सौ", mr: "100 / शंभर" },
+    fldNote: { ta: "சரிகட்டு, கழிவு, அல்லது வேறு விவரம்", en: "Adjustment or other detail", hi: "समायोजन या कोई और बात", mr: "समायोजन किंवा इतर तपशील" },
+    fldCustomer: { ta: "எ.கா. ரமேஷ் / Ramesh", en: "e.g. Ramesh", hi: "जैसे रमेश / Ramesh", mr: "उदा. रमेश / Ramesh" },
+    staffName: { ta: "எ.கா. முருகன்", en: "e.g. Murugan", hi: "जैसे राजू", mr: "उदा. राजू" },
+    stockAmount: { ta: "விருப்பம்", en: "optional", hi: "चाहें तो", mr: "हवे असल्यास" },
+    stockNote: { ta: "விருப்பம்", en: "optional", hi: "चाहें तो", mr: "हवे असल्यास" }
+  };
+
+  /** Re-label the static page (Tamil originals stay in data-ta0 / data-en0). */
+  function applyStaticLang() {
+    const l = curLang();
+    document.documentElement.lang = l;
+    document.body.classList.remove("lang-ta", "lang-en", "lang-hi", "lang-mr");
+    document.body.classList.add("lang-" + l);
+    document.querySelectorAll(".bi").forEach((el) => {
+      if (el.hasAttribute("data-dyn")) return;
+      if (el.closest("#entryList, #kadanList, #eodCard, #weekCard, #monthCard, #topCard, #stockList, #staffList, #dayMarginBox, #marginList, #menuEditor, #confirmBody, #toastMsg, #liveBox, #menuGrid, #chips, #modalBody")) return;
+      const ta = el.querySelector(":scope > .ta");
+      const en = el.querySelector(":scope > .en");
+      if (!ta || !en || ta.id || en.id) return;
+      if (el.dataset.ta0 == null) {
+        el.dataset.ta0 = ta.textContent;
+        el.dataset.en0 = en.textContent;
+      }
+      const p = P(el.dataset.ta0, el.dataset.en0);
+      ta.textContent = p;
+      en.hidden = l === "en" || p === el.dataset.en0;
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+      const parts = el.getAttribute("data-i18n-aria").split("|");
+      el.setAttribute("aria-label", S(parts[0], parts[1]));
+    });
+    Object.keys(PLACEHOLDERS).forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute("placeholder", PLACEHOLDERS[id][l] || PLACEHOLDERS[id].en);
+    });
+    document.querySelectorAll("#fldUnit option").forEach((o) => {
+      if (o.dataset.u == null) o.dataset.u = o.value || o.textContent;
+      o.value = o.dataset.u;
+      o.textContent = l === "ta" ? o.dataset.u : unitName(o.dataset.u);
+    });
+    const sub = document.querySelector("header.top .sub");
+    if (sub) sub.textContent = l === "ta" ? "இட்லி • தோசை • டீ — Mumbai" : [itemName("இட்லி"), itemName("தோசை"), itemName("டீ")].join(" • ") + " — Mumbai";
+    const mic = document.getElementById("micLabel");
+    if (mic && !state.listening) mic.textContent = P("பேசு", "Speak");
+    document.title = l === "ta" ? "கடை கணக்கு — Kadai Tracker" : P("கடை கணக்கு", "Kadai Tracker") + (l === "en" ? "" : " — Kadai Tracker");
   }
 
   loadStore();
