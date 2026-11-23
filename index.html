@@ -498,7 +498,18 @@
     .level-meter i { display: block; width: 10px; height: 4px; border-radius: 3px; background: #CBBBA8; transition: height .08s linear, background .08s linear; }
     .level-meter i.on { background: #0A6B3C; }
     .level-meter i.hot { background: #D97706; }
-    .mic-giant.listening { box-shadow: 0 0 0 calc(6px + var(--lvl, 0) * 26px) rgba(37, 99, 235, 0.22); }
+    .mic-giant.listening { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.22); animation: micRing 1.4s ease-in-out infinite; }
+    .mic-giant.listening.hearing { animation-duration: .6s; }
+    @keyframes micRing { 0%, 100% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.25); } 50% { box-shadow: 0 0 0 22px rgba(37, 99, 235, 0.08); } }
+    .listen-state { margin: 8px 0 4px; padding: 8px 12px; border-radius: 12px; background: #FDECEC; color: #9B1C1C; font-weight: 700; text-align: center; }
+    .listen-state.starting { background: #FFF4DB; color: #7A4B00; }
+    .listen-state.hearing { background: #E6F4EA; color: #0A6B3C; }
+    .level-meter[hidden] { display: none !important; }
+    .level-meter.pulse i { animation: lvlPulse .5s ease-in-out infinite alternate; background: #0A6B3C; }
+    .level-meter.pulse i:nth-child(2n) { animation-delay: .12s; }
+    .level-meter.pulse i:nth-child(3n) { animation-delay: .25s; }
+    @keyframes lvlPulse { from { height: 4px; } to { height: 24px; } }
+    .heard-lab { color: var(--muted); font-weight: 600; font-size: .85em; }
     .person-card h3 { margin: 0 0 6px; font-size: 17px; }
     .person-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px; margin: 6px 0; min-height: 52px; }
     .person-row.on { border-color: var(--coffee); background: #F6EDE2; }
@@ -590,8 +601,9 @@
           <button type="button" data-lang="hi-IN"><span class="lg-n">हिंदी</span></button>
           <button type="button" data-lang="mr-IN"><span class="lg-n">मराठी</span></button>
         </div>
+        <div class="listen-state" id="listenState" role="status" aria-live="polite" hidden></div>
         <div class="level-wrap" id="levelWrap" hidden>
-          <div class="level-meter" id="levelMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="level-meter" id="levelMeter" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="help bi" id="closeTip"><span class="ta">📱 போனை வாய்க்கு அருகில் வைத்து பேசுங்கள்</span><span class="en">Speak close to the phone</span></div>
         </div>
         <div class="live-box" id="liveBox"><span class="en">…</span></div>
@@ -916,7 +928,7 @@
       <button type="button" data-voicemode="tap"><span class="bi" style="align-items:center"><span class="ta">தட்டி பேசு</span><span class="en">Tap to talk</span></span></button>
       <button type="button" data-voicemode="hold"><span class="bi" style="align-items:center"><span class="ta">அழுத்திப் பிடித்து பேசு</span><span class="en">Hold to talk</span></span></button>
     </div>
-    <label class="check-row"><input type="checkbox" id="setNoiseFilter"> <span class="bi"><span class="ta">சத்தம் குறைப்பு + ஒலி அளவு காட்டி</span><span class="en">Noise filter + sound level meter</span></span></label>
+    <label class="check-row"><input type="checkbox" id="setMicPulse"> <span class="bi"><span class="ta">பேசும்போது ஒலி அலை காட்டு (மைக்கைத் தனியாகத் திறக்காது)</span><span class="en">Show a sound pulse while listening (does not open the mic separately)</span></span></label>
     <p class="help"><span class="bi"><span class="ta">கூட்டத்தில்: போனை வாய்க்கு அருகில் வைத்து, அழுத்திப் பிடித்து பேசுங்கள்.</span><span class="en">In a crowd: hold the phone close to your mouth and use Hold to talk.</span></span></p>
     <label class="lab bi" for="setShopName"><span class="ta">கடையின் பெயர்</span><span class="en">Shop name</span></label>
     <input class="full" id="setShopName" maxlength="80">
@@ -1156,6 +1168,11 @@
     "Hold to talk": T("दबाए रखकर बोलो", "दाबून धरून बोला"),
     "Hold & speak": T("दबाए रखो", "दाबून धरा"),
     "Noise filter + sound level meter": T("शोर कम करें + आवाज़ मीटर", "आवाज गाळणी + आवाज मीटर"),
+    "Opening the mic… if Chrome asks, tap Allow": T("माइक खुल रहा है… Chrome पूछे तो Allow दबाएँ", "माइक उघडत आहे… Chrome ने विचारल्यास Allow दाबा"),
+    "🔴 Listening… speak now": T("🔴 सुन रहा हूँ… अभी बोलिए", "🔴 ऐकत आहे… आता बोला"),
+    "🔴 Hearing you…": T("🔴 आवाज़ आ रही है…", "🔴 आवाज येत आहे…"),
+    "Heard": T("सुना", "ऐकले"),
+    "Show a sound pulse while listening (does not open the mic separately)": T("सुनते समय आवाज़ की लहर दिखाएँ (माइक अलग से नहीं खोलता)", "ऐकताना आवाजाची लहर दाखवा (माइक वेगळा उघडत नाही)"),
     "In a crowd: hold the phone close to your mouth and use Hold to talk.": T("भीड़ में: फ़ोन मुँह के पास रखें और 'दबाए रखकर बोलो' चुनें।", "गर्दीत: फोन तोंडाजवळ धरा आणि 'दाबून धरून बोला' वापरा.")
   };
   const api = { DICT };
@@ -2921,7 +2938,8 @@
   const VOICE = {
     INITIAL_TIMEOUT_MS: 5500,
     SILENCE_MS: 2000,
-    MAX_RESTARTS: 3
+    MAX_RESTARTS: 3,
+    START_TIMEOUT_MS: 20000
   };
 
   function shouldRestartRecognition(s) {
@@ -2939,25 +2957,51 @@
     return !!(s.listening && s.gotSpeech && (now - (s.lastResultAt || 0)) >= VOICE.SILENCE_MS);
   }
 
+  /** v9: one clear bilingual message per SpeechRecognition error code (with steps where the user can fix it). */
   function voiceErrorMessage(code) {
+    const allowSteps = {
+      ta: "மைக் அனுமதி மறுக்கப்பட்டது. சரிசெய்ய: முகவரிப் பட்டியில் 🔒 (அல்லது ⓘ) தட்டவும் → அனுமதிகள் / Permissions → மைக்ரோஃபோன் → அனுமதி (Allow). அல்லது Chrome ⋮ → Settings → Site settings → Microphone → இந்தத் தளம் → Allow. பிறகு பக்கத்தைப் புதுப்பிக்கவும். அதுவரை தட்டச்சு செய்யுங்கள்.",
+      en: "Mic permission denied. To fix: tap the 🔒 (or ⓘ) in the address bar → Permissions → Microphone → Allow. Or Chrome ⋮ → Settings → Site settings → Microphone → this site → Allow. Then reload the page. Until then, please type.",
+      hi: "माइक की अनुमति नहीं मिली। ठीक करें: पता-पट्टी में 🔒 (या ⓘ) दबाएँ → Permissions → Microphone → Allow। या Chrome ⋮ → Settings → Site settings → Microphone → यह साइट → Allow। फिर पेज रीलोड करें। तब तक टाइप करें।",
+      mr: "माइकची परवानगी नाही. दुरुस्त करा: पत्त्याच्या पट्टीत 🔒 (किंवा ⓘ) दाबा → Permissions → Microphone → Allow. किंवा Chrome ⋮ → Settings → Site settings → Microphone → ही साइट → Allow. मग पेज रीलोड करा. तोपर्यंत टाइप करा."
+    };
     const messages = {
       "no-speech": {
-        ta: "ஒன்றும் கேட்கவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Nothing was heard. Please type instead.",
-        hi: "कुछ सुनाई नहीं दिया। टाइप कर दीजिए।",
-        mr: "काहीच ऐकू आले नाही. टाइप करा."
+        ta: "ஒன்றும் கேட்கவில்லை. போனை வாய்க்கு அருகில் வைத்து மீண்டும் மைக்கைத் தட்டுங்கள், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "Nothing was heard. Hold the phone close, tap the mic again and speak — or type instead.",
+        hi: "कुछ सुनाई नहीं दिया। फ़ोन पास रखकर फिर माइक दबाएँ और बोलें — या टाइप कर दीजिए।",
+        mr: "काहीच ऐकू आले नाही. फोन जवळ धरून पुन्हा माइक दाबा आणि बोला — किंवा टाइप करा."
       },
-      "not-allowed": {
-        ta: "மைக் அனுமதி மறுக்கப்பட்டது. அமைப்புகளில் அனுமதித்து மீண்டும் முயலவும், அல்லது தட்டச்சு செய்யுங்கள்.",
-        en: "Mic permission denied. Allow the mic in settings, or type instead.",
-        hi: "माइक की अनुमति नहीं मिली। सेटिंग में माइक चालू करें, या टाइप करें।",
-        mr: "माइकची परवानगी नाही. सेटिंगमध्ये माइक चालू करा, किंवा टाइप करा."
+      "not-allowed": allowSteps,
+      "service-not-allowed": {
+        ta: "இந்த போனில் Chrome குரல் சேவை அனுமதிக்கப்படவில்லை. Chrome-ஐ புதுப்பிக்கவும், Google ஆப் (குரல் தேடல்) இயக்கத்தில் உள்ளதா பார்க்கவும். Incognito-வில் வேலை செய்யாது. அதுவரை தட்டச்சு செய்யுங்கள்.",
+        en: "Chrome's speech service is not allowed on this phone. Update Chrome and make sure the Google app (voice typing) is enabled; it does not work in Incognito. Please type for now.",
+        hi: "इस फ़ोन पर Chrome की आवाज़ सेवा की अनुमति नहीं है। Chrome अपडेट करें और Google ऐप (वॉइस टाइपिंग) चालू रखें; Incognito में नहीं चलता। अभी टाइप करें।",
+        mr: "या फोनवर Chrome ची आवाज सेवा चालू नाही. Chrome अपडेट करा आणि Google ॲप (व्हॉइस टायपिंग) चालू ठेवा; Incognito मध्ये चालत नाही. आत्ता टाइप करा."
       },
       "network": {
-        ta: "இணையம் இல்லை. குரல் இணையம் வேண்டும் — தட்டச்சு செய்யுங்கள்.",
-        en: "No network. Voice needs the internet — please type instead.",
-        hi: "इंटरनेट नहीं है। आवाज़ के लिए इंटरनेट चाहिए — टाइप करें।",
-        mr: "इंटरनेट नाही. आवाजासाठी इंटरनेट लागते — टाइप करा."
+        ta: "இணையம் இல்லை. குரல் இணையம் வேண்டும் — இணையத்தை இயக்கி மீண்டும் முயலவும், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "No network. Voice needs the internet — turn on data/Wi-Fi and try again, or type instead.",
+        hi: "इंटरनेट नहीं है। आवाज़ के लिए इंटरनेट चाहिए — डेटा/Wi-Fi चालू करके फिर कोशिश करें, या टाइप करें।",
+        mr: "इंटरनेट नाही. आवाजासाठी इंटरनेट लागते — डेटा/Wi-Fi चालू करून पुन्हा प्रयत्न करा, किंवा टाइप करा."
+      },
+      "audio-capture": {
+        ta: "மைக்கைப் பிடிக்க முடியவில்லை — வேறு ஆப் (அழைப்பு, WhatsApp குரல், ரெக்கார்டர்) மைக்கைப் பயன்படுத்துகிறதா? அதை மூடிவிட்டு மீண்டும் தட்டுங்கள், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "Could not capture audio from the mic — is another app (a call, WhatsApp voice, recorder) using it? Close it and tap again, or type instead.",
+        hi: "माइक से आवाज़ नहीं मिली — क्या कोई और ऐप (कॉल, WhatsApp वॉइस, रिकॉर्डर) माइक इस्तेमाल कर रहा है? उसे बंद करके फिर दबाएँ, या टाइप करें।",
+        mr: "माइकमधून आवाज मिळाला नाही — दुसरे ॲप (कॉल, WhatsApp व्हॉइस, रेकॉर्डर) माइक वापरत आहे का? ते बंद करून पुन्हा दाबा, किंवा टाइप करा."
+      },
+      "no-start": {
+        ta: "மைக் திறக்கவில்லை. Chrome அனுமதி கேட்டால் 'Allow' அழுத்தவும், பிறகு மீண்டும் மைக்கைத் தட்டுங்கள்.",
+        en: "The mic did not open. If Chrome asks for permission, tap 'Allow', then tap the mic again.",
+        hi: "माइक नहीं खुला। Chrome अनुमति माँगे तो 'Allow' दबाएँ, फिर माइक दोबारा दबाएँ।",
+        mr: "माइक उघडला नाही. Chrome ने परवानगी मागितल्यास 'Allow' दाबा, मग माइक पुन्हा दाबा."
+      },
+      "language-not-supported": {
+        ta: "இந்த மொழிக்கு இந்த போனில் குரல் இல்லை. வேறு மொழியைத் தேர்ந்தெடுக்கவும், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "This phone has no voice support for this language. Pick another voice language, or type instead.",
+        hi: "इस फ़ोन में इस भाषा के लिए आवाज़ नहीं है। दूसरी भाषा चुनें, या टाइप करें।",
+        mr: "या फोनवर या भाषेसाठी आवाज नाही. दुसरी भाषा निवडा, किंवा टाइप करा."
       },
       "iphone": {
         ta: "iPhone / Safari-ல் குரல் வேலை செய்யாது. தட்டச்சு செய்யுங்கள்.",
@@ -2966,25 +3010,37 @@
         mr: "iPhone / Safari मध्ये आवाज चालत नाही. टाइप करा."
       },
       "unsupported": {
-        ta: "இந்த உலாவியில் குரல் இல்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Voice is not supported in this browser. Please type instead.",
-        hi: "इस ब्राउज़र में आवाज़ नहीं है। टाइप करें।",
-        mr: "या ब्राउझरमध्ये आवाज नाही. टाइप करा."
-      },
-      "audio-capture": {
-        ta: "மைக்கைப் பிடிக்க முடியவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Could not capture audio. Please type instead.",
-        hi: "माइक से आवाज़ नहीं मिली। टाइप करें।",
-        mr: "माइकमधून आवाज मिळाला नाही. टाइप करा."
+        ta: "இந்த உலாவியில் குரல் இல்லை. Chrome-ல் திறக்கவும், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "Voice is not supported in this browser. Open in Chrome, or please type instead.",
+        hi: "इस ब्राउज़र में आवाज़ नहीं है। Chrome में खोलें, या टाइप करें।",
+        mr: "या ब्राउझरमध्ये आवाज नाही. Chrome मध्ये उघडा, किंवा टाइप करा."
       },
       "failed": {
-        ta: "குரல் பிடிக்கவில்லை. தட்டச்சு செய்யுங்கள்.",
-        en: "Voice capture failed. Please type instead.",
-        hi: "आवाज़ पकड़ में नहीं आई। टाइप करें।",
-        mr: "आवाज पकडता आला नाही. टाइप करा."
+        ta: "குரல் பிடிக்கவில்லை. மீண்டும் மைக்கைத் தட்டுங்கள், அல்லது தட்டச்சு செய்யுங்கள்.",
+        en: "Voice capture failed. Tap the mic again, or please type instead.",
+        hi: "आवाज़ पकड़ में नहीं आई। माइक फिर दबाएँ, या टाइप करें।",
+        mr: "आवाज पकडता आला नाही. माइक पुन्हा दाबा, किंवा टाइप करा."
       }
     };
+    messages["permission"] = allowSteps;
     return messages[code] || messages.failed;
+  }
+
+  /** v9: map a SpeechRecognition onerror code to our message code. "aborted" is our own stop. */
+  function voiceErrorCode(err) {
+    const e = String(err || "");
+    if (e === "aborted") return null;
+    if (["no-speech", "not-allowed", "service-not-allowed", "network", "audio-capture", "language-not-supported"].indexOf(e) !== -1) return e;
+    return "failed";
+  }
+
+  /** v9: the no-speech countdown starts when the mic actually opens (after a first-use permission prompt). */
+  function voiceTimeoutCode(s, now) {
+    s = s || {};
+    if (!s.listening || s.holding) return null;
+    if (!s.audioStarted) return (now - (s.tappedAt || 0)) >= VOICE.START_TIMEOUT_MS ? "no-start" : null;
+    if (!s.gotSpeech) return (now - (s.startedAt || 0)) >= VOICE.INITIAL_TIMEOUT_MS ? "no-speech" : null;
+    return (now - (s.lastResultAt || 0)) >= VOICE.SILENCE_MS ? "done" : null;
   }
 
   function unsupportedVoiceCode(ua, hasSpeechAPI) {
@@ -5085,6 +5141,8 @@
     parsedToEntry,
     VOICE,
     shouldRestartRecognition,
+    voiceErrorCode,
+    voiceTimeoutCode,
     shouldStopForInitialTimeout,
     shouldStopForSilence,
     voiceErrorMessage,
@@ -5270,7 +5328,7 @@
   const state = {
     date: L.todayISO(),
     entries: [],
-    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", noiseFilter: true },
+    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", micPulse: false, voiceFixV9: true },
     personFilter: "",
     pendingCalc: null,
     finalAlts: [],
@@ -5328,9 +5386,12 @@
       staff: shop.staff,
       wages: shop.wages,
       stockMoves: shop.stockMoves,
-      voiceMode: parsed && parsed.voiceMode === "hold" ? "hold" : "tap",
-      noiseFilter: !(parsed && parsed.noiseFilter === false)
+      // v9: one-time reset — v8's mic meter (getUserMedia) broke voice on Android; meter off, tap mode.
+      voiceMode: parsed && parsed.voiceFixV9 && parsed.voiceMode === "hold" ? "hold" : "tap",
+      micPulse: !!(parsed && parsed.voiceFixV9 && parsed.micPulse === true),
+      voiceFixV9: true
     };
+    if (parsed && !parsed.voiceFixV9) state.settingsMigrated = true;
   }
 
   function normalizeVoiceLang(v, lang) {
@@ -5548,8 +5609,8 @@
     document.querySelectorAll("[data-voicemode]").forEach((b) => {
       b.classList.toggle("on", b.getAttribute("data-voicemode") === (state.settings.voiceMode || "tap"));
     });
-    const nf = document.getElementById("setNoiseFilter");
-    if (nf) nf.checked = state.settings.noiseFilter !== false;
+    const nf = document.getElementById("setMicPulse");
+    if (nf) nf.checked = state.settings.micPulse === true;
     syncMicLabel();
     renderPersons();
 
@@ -5910,69 +5971,49 @@
     }
   }
 
-  /* ---------- v8: noise-filtered mic stream + live level meter ---------- */
-  function startMeter() {
-    const wrap = document.getElementById("levelWrap");
-    if (wrap) wrap.hidden = false;
-    if (state.settings.noiseFilter === false || state.meterBlocked) return;
-    const md = navigator.mediaDevices;
-    if (!md || !md.getUserMedia) return;
-    md.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then((stream) => {
-      if (!state.listening) { stream.getTracks().forEach((t) => t.stop()); return; }
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) { state.audio = { stream }; return; }
-      const ctx = new AC();
-      const src = ctx.createMediaStreamSource(stream);
-      const an = ctx.createAnalyser();
-      an.fftSize = 512;
-      src.connect(an);
-      const buf = new Uint8Array(an.fftSize);
-      const bars = Array.from(document.querySelectorAll("#levelMeter i"));
-      const mic = document.getElementById("micBig");
-      const audio = { stream, ctx, raf: 0 };
-      state.audio = audio;
-      const tick = () => {
-        if (state.audio !== audio) return;
-        an.getByteTimeDomainData(buf);
-        let sum = 0;
-        for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
-        const lvl = Math.min(1, Math.sqrt(sum / buf.length) * 4);
-        const n = Math.round(lvl * bars.length);
-        bars.forEach((b, i) => { b.classList.toggle("on", i < n); b.classList.toggle("hot", i < n && i >= bars.length - 2); });
-        if (mic) mic.style.setProperty("--lvl", lvl.toFixed(2));
-        audio.raf = requestAnimationFrame(tick);
-      };
-      tick();
-    }).catch(() => { /* meter is optional */ });
-  }
-  function stopMeter() {
-    const a = state.audio;
-    state.audio = null;
-    if (a) {
-      if (a.raf) cancelAnimationFrame(a.raf);
-      try { a.stream.getTracks().forEach((t) => t.stop()); } catch (e) { /* ignore */ }
-      try { if (a.ctx) a.ctx.close(); } catch (e) { /* ignore */ }
-    }
-    document.querySelectorAll("#levelMeter i").forEach((b) => b.classList.remove("on", "hot"));
+  /* ---------- v9: listening state (SpeechRecognition events only — no second mic stream) ---------- */
+  const PHASES = {
+    starting: ["மைக் திறக்கிறது… Chrome அனுமதி கேட்டால் Allow அழுத்துங்கள்", "Opening the mic… if Chrome asks, tap Allow"],
+    listening: ["🔴 கேட்கிறேன்… இப்போது பேசுங்கள்", "🔴 Listening… speak now"],
+    hearing: ["🔴 கேட்கிறது…", "🔴 Hearing you…"]
+  };
+  function setListenPhase(phase) {
+    state.listenPhase = phase || "";
+    const box = document.getElementById("listenState");
     const mic = document.getElementById("micBig");
-    if (mic) mic.style.removeProperty("--lvl");
+    if (mic) mic.classList.toggle("hearing", phase === "hearing");
     const wrap = document.getElementById("levelWrap");
-    if (wrap) wrap.hidden = true;
+    if (wrap) wrap.hidden = !phase;
+    const meter = document.getElementById("levelMeter");
+    if (meter) {
+      meter.hidden = state.settings.micPulse !== true;
+      meter.classList.toggle("pulse", phase === "hearing");
+    }
+    if (!box) return;
+    if (!phase) { box.hidden = true; box.innerHTML = ""; return; }
+    const pair = PHASES[phase] || PHASES.listening;
+    box.hidden = false;
+    box.className = "listen-state " + phase;
+    box.innerHTML = H(pair[0], pair[1]);
   }
   /** Of the recogniser's alternatives, keep the one that parses into the most sensible entries. */
   function bestHeardText() {
-    const segs = state.finalAlts || [];
-    const tail = state.interimText.trim();
-    if (!segs.length || !segs.some((s) => s.length > 1)) return null;
-    const maxK = Math.max.apply(null, segs.map((s) => s.length));
-    const cands = [];
-    for (let k = 0; k < maxK; k++) {
-      const parts = segs.map((s) => (s[Math.min(k, s.length - 1)] || {}).transcript || "");
-      const confs = segs.map((s) => (s[Math.min(k, s.length - 1)] || {}).confidence || 0);
-      cands.push({ transcript: (parts.join(" ") + " " + tail).replace(/\s+/g, " ").trim(), confidence: confs.reduce((a, b) => a + b, 0) / confs.length });
+    try {
+      const segs = state.finalAlts || [];
+      const tail = state.interimText.trim();
+      if (!segs.length || !segs.some((s) => s.length > 1)) return null;
+      const maxK = Math.max.apply(null, segs.map((s) => s.length));
+      const cands = [];
+      for (let k = 0; k < maxK; k++) {
+        const parts = segs.map((s) => (s[Math.min(k, s.length - 1)] || {}).transcript || "");
+        const confs = segs.map((s) => (s[Math.min(k, s.length - 1)] || {}).confidence || 0);
+        cands.push({ transcript: (parts.join(" ") + " " + tail).replace(/\s+/g, " ").trim(), confidence: confs.reduce((x, y) => x + y, 0) / confs.length });
+      }
+      const idx = L.pickBestAlternative(cands, { menu: state.settings.menu });
+      return cands[idx] ? cands[idx].transcript : null;
+    } catch (e) {
+      return null;
     }
-    const idx = L.pickBestAlternative(cands, { menu: state.settings.menu });
-    return cands[idx] ? cands[idx].transcript : null;
   }
 
   function showLive() {
@@ -5985,7 +6026,8 @@
         : H("பேசுங்கள் அல்லது ஒரு வரியில் எழுதுங்கள்", "Speak or type one line");
       return;
     }
-    box.innerHTML = (fin ? fin + " " : "") + (inter ? '<span class="interim">' + inter + "</span>" : "");
+    const label = state.listening ? "" : '<span class="heard-lab">' + TL("கேட்டது", "Heard") + ":</span> ";
+    box.innerHTML = label + (fin ? fin + " " : "") + (inter ? '<span class="interim">' + inter + "</span>" : "");
   }
 
   function clearSilence() {
@@ -5999,24 +6041,31 @@
     const was = state.listening;
     state.stopRequested = true;
     state.listening = false;
+    state.holding = false;
     clearSilence();
     if (state.recognition) {
-      try { state.recognition.onend = null; state.recognition.onerror = null; state.recognition.stop(); } catch (e) { /* ignore */ }
+      const rec = state.recognition;
       state.recognition = null;
+      try { rec.onend = null; rec.onerror = null; rec.onresult = null; rec.stop(); } catch (e) { /* ignore */ }
     }
     document.getElementById("micBig").classList.remove("listening");
-    stopMeter();
+    setListenPhase("");
     syncMicLabel();
     syncVoicePanel();
     const best = bestHeardText();
     const text = best || (state.finalText + " " + state.interimText).replace(/\s+/g, " ").trim();
-    if (best && best !== state.finalText.trim()) { state.finalText = best; state.interimText = ""; }
+    if (best && best !== state.finalText.trim()) state.finalText = best;
+    if (text) { state.finalText = text; state.interimText = ""; }
     showLive();
     if (!was) return;
     if (text) runCommand(text, { source: "voice", speechConfidence: state.speechConfidence });
     else if (reason && reason !== "user") showVoiceError(reason === true ? "no-speech" : reason);
   }
 
+  /**
+   * v9: the same simple path as v7 — SpeechRecognition only. No getUserMedia stream is ever opened,
+   * so nothing competes with Chrome for the microphone (that was the v8 Android failure).
+   */
   function startListen() {
     hideVoiceError();
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -6035,85 +6084,110 @@
       stopListen("user");
       return;
     }
+    if (state.recognition) {
+      try { state.recognition.onend = null; state.recognition.onerror = null; state.recognition.abort(); } catch (e) { /* ignore */ }
+      state.recognition = null;
+    }
     state.finalText = "";
     state.interimText = "";
+    state.finalAlts = [];
     state.gotSpeech = false;
+    state.audioStarted = false;
+    state.tappedAt = Date.now();
     state.lastResultAt = Date.now();
     state.startedAt = Date.now();
     state.restartCount = 0;
     state.stopRequested = false;
     state.speechConfidence = null;
-    state.finalAlts = [];
     state.listening = true;
     document.getElementById("micBig").classList.add("listening");
     syncMicLabel();
+    setListenPhase("starting");
     syncVoicePanel();
     showLive();
-    startMeter();
+
+    // Mic blocked for this site? Say how to allow it (read-only check, never opens the mic).
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: "microphone" }).then((p) => {
+          if (p && p.state === "denied" && state.listening && !state.audioStarted) stopListen("not-allowed");
+        }).catch(() => { /* not supported */ });
+      }
+    } catch (e) { /* ignore */ }
+
+    const markAudio = () => {
+      if (!state.audioStarted) {
+        state.audioStarted = true;
+        state.startedAt = Date.now(); // no-speech countdown starts only when the mic is really open
+      }
+      if (state.listenPhase === "starting") setListenPhase("listening");
+    };
 
     const startRec = () => {
       if (!state.listening || state.stopRequested) return;
-      const rec = new SR();
-      rec.lang = recLang();
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = 5;
+      let rec;
+      try {
+        rec = new SR();
+        rec.lang = recLang();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.maxAlternatives = 5;
+      } catch (e) {
+        stopListen("failed");
+        return;
+      }
+      rec.onstart = markAudio;
+      rec.onaudiostart = markAudio;
+      rec.onsoundstart = () => { markAudio(); setListenPhase("hearing"); };
+      rec.onspeechstart = () => { markAudio(); setListenPhase("hearing"); };
+      rec.onspeechend = () => { if (state.listening) setListenPhase("listening"); };
       rec.onresult = function (ev) {
-        state.lastResultAt = Date.now();
-        state.gotSpeech = true;
-        let interim = "";
-        const confs = [];
-        for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          const alt = ev.results[i][0];
-          const t = (alt && alt.transcript) || "";
-          if (typeof alt.confidence === "number" && alt.confidence > 0) confs.push(alt.confidence);
-          if (ev.results[i].isFinal) {
-            state.finalText = (state.finalText + " " + t).replace(/\s+/g, " ").trim();
-            const alts = [];
-            for (let k = 0; k < ev.results[i].length; k++) {
-              const a = ev.results[i][k];
-              if (a && a.transcript) alts.push({ transcript: a.transcript, confidence: typeof a.confidence === "number" ? a.confidence : 0 });
-            }
-            state.finalAlts.push(alts.length ? alts : [{ transcript: t, confidence: 0 }]);
+        try {
+          markAudio();
+          state.lastResultAt = Date.now();
+          state.gotSpeech = true;
+          let interim = "";
+          const confs = [];
+          for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const res = ev.results[i];
+            const alt = res && res[0];
+            const t = (alt && alt.transcript) || "";
+            if (alt && typeof alt.confidence === "number" && alt.confidence > 0) confs.push(alt.confidence);
+            if (res && res.isFinal) {
+              state.finalText = (state.finalText + " " + t).replace(/\s+/g, " ").trim();
+              const alts = [];
+              for (let k = 0; k < (res.length || 0); k++) {
+                const a = res[k];
+                if (a && a.transcript) alts.push({ transcript: a.transcript, confidence: typeof a.confidence === "number" ? a.confidence : 0 });
+              }
+              state.finalAlts.push(alts.length ? alts : [{ transcript: t, confidence: 0 }]);
+            } else interim += t;
           }
-          else interim += t;
-        }
-        if (confs.length) {
-          const minC = Math.min.apply(null, confs);
-          state.speechConfidence = state.speechConfidence == null ? minC : Math.min(state.speechConfidence, minC);
-        }
-        state.interimText = interim;
-        showLive();
+          if (confs.length) {
+            const minC = Math.min.apply(null, confs);
+            state.speechConfidence = state.speechConfidence == null ? minC : Math.min(state.speechConfidence, minC);
+          }
+          state.interimText = interim;
+          showLive();
+        } catch (e) { /* keep listening */ }
       };
       rec.onerror = function (ev) {
         const err = ev && ev.error;
-        if (err === "aborted") return;
-        if (err === "no-speech") {
-          // If we already heard something, ignore a late no-speech; otherwise the initial timeout handles it.
-          if (!state.gotSpeech) return;
+        if (err === "no-speech" && (state.gotSpeech || state.holding)) return; // late no-speech after we heard something
+        const code = L.voiceErrorCode(err);
+        if (!code) return; // aborted (our own stop)
+        if (code === "no-speech") {
+          // Chrome gave up waiting; finish now with the clear message unless the timer already did.
+          stopListen("no-speech");
           return;
         }
-        if (err === "not-allowed" || err === "service-not-allowed") stopListen("not-allowed");
-        else if (err === "network") stopListen("network");
-        else if (err === "audio-capture") {
-          // Some phones refuse two mic users at once: drop the level meter and retry once.
-          if (state.audio && !state.meterBlocked) {
-            state.meterBlocked = true;
-            stopMeter();
-            const w = document.getElementById("levelWrap");
-            if (w) w.hidden = false;
-            try { startRec(); } catch (e) { stopListen("audio-capture"); }
-            return;
-          }
-          stopListen("audio-capture");
-        }
-        else if (err) stopListen("failed");
+        stopListen(code);
       };
       rec.onend = function () {
         if (!state.listening || state.stopRequested) return;
         if (state.holding && state.restartCount < 30) {
           state.restartCount += 1;
-          try { startRec(); } catch (e) { stopListen("failed"); }
+          startRec();
           return;
         }
         if (L.shouldRestartRecognition({
@@ -6123,36 +6197,45 @@
           restartCount: state.restartCount
         })) {
           state.restartCount += 1;
-          try { startRec(); } catch (e) { stopListen("failed"); }
+          startRec();
           return;
         }
         if (state.gotSpeech) stopListen("user");
-        // If nothing was heard yet, keep the session closed and let the initial timeout finish.
+        else if (state.audioStarted) {
+          // Some Android builds end a session early even in continuous mode: retry quietly within the window.
+          if (Date.now() - state.startedAt < L.VOICE.INITIAL_TIMEOUT_MS && state.restartCount < L.VOICE.MAX_RESTARTS) {
+            state.restartCount += 1;
+            startRec();
+            return;
+          }
+          stopListen("no-speech");
+        }
+        // If the mic never opened (permission prompt still showing), the start timer decides.
       };
       state.recognition = rec;
-      try { rec.start(); } catch (e) { stopListen("failed"); }
+      try {
+        rec.start();
+      } catch (e) {
+        state.recognition = null;
+        const name = e && e.name;
+        stopListen(name === "NotAllowedError" ? "not-allowed" : "failed");
+      }
     };
     startRec();
 
     clearSilence();
     state.silenceTimer = setInterval(() => {
-      const now = Date.now();
-      if (state.holding) return; // hold-to-talk: stop only when the finger lifts
-      if (L.shouldStopForInitialTimeout({
+      const code = L.voiceTimeoutCode({
         listening: state.listening,
+        holding: state.holding,
+        audioStarted: state.audioStarted,
         gotSpeech: state.gotSpeech,
-        startedAt: state.startedAt
-      }, now)) {
-        stopListen("no-speech");
-        return;
-      }
-      if (L.shouldStopForSilence({
-        listening: state.listening,
-        gotSpeech: state.gotSpeech,
+        tappedAt: state.tappedAt,
+        startedAt: state.startedAt,
         lastResultAt: state.lastResultAt
-      }, now)) {
-        stopListen("user");
-      }
+      }, Date.now());
+      if (!code) return;
+      stopListen(code === "done" ? "user" : code);
     }, 200);
   }
 
@@ -7334,30 +7417,34 @@
       e.target.value = e.target.value.toUpperCase();
       try { e.target.setSelectionRange(start, end); } catch (err) { /* ignore */ }
     });
-    document.getElementById("micBig").addEventListener("click", (e) => {
-      if ((state.settings.voiceMode || "tap") === "hold" && speechSupported()) { e.preventDefault(); return; }
+    // Tap mode (default): a click toggles listening — exactly the v7 path.
+    // Hold mode: press starts, release stops; a quick tap (< 600 ms) keeps listening like tap mode.
+    const isHold = () => (state.settings.voiceMode || "tap") === "hold" && speechSupported();
+    const mic = document.getElementById("micBig");
+    mic.addEventListener("click", (e) => {
+      if (isHold() && state.holdHandled) { e.preventDefault(); state.holdHandled = false; return; }
       startListen();
     });
-    // v8: hold-to-talk — press and hold the mic, release to stop
-    const mic = document.getElementById("micBig");
     const holdStart = (e) => {
-      if ((state.settings.voiceMode || "tap") !== "hold" || !speechSupported()) return;
-      e.preventDefault();
-      if (state.listening) return;
-      state.holding = true;
+      if (!isHold()) return;
+      if (e.button != null && e.button > 0) return;
+      state.holdHandled = true;
+      if (state.listening) { stopListen("user"); return; }
+      state.holdDownAt = Date.now();
       startListen();
+      state.holding = state.listening;
     };
     const holdEnd = () => {
       if (!state.holding) return;
       state.holding = false;
+      if (Date.now() - (state.holdDownAt || 0) < 600) return; // quick tap → behave like tap mode
       // short grace so the last words arrive as a final result
-      setTimeout(() => { if (state.listening) stopListen("user"); }, 450);
+      setTimeout(() => { if (state.listening && !state.holding) stopListen("user"); }, 450);
     };
     mic.addEventListener("pointerdown", holdStart);
     mic.addEventListener("pointerup", holdEnd);
     mic.addEventListener("pointercancel", holdEnd);
-    mic.addEventListener("pointerleave", holdEnd);
-    mic.addEventListener("contextmenu", (e) => { if ((state.settings.voiceMode || "tap") === "hold") e.preventDefault(); });
+    mic.addEventListener("contextmenu", (e) => { if (isHold()) e.preventDefault(); });
     document.getElementById("voiceModeGrid").addEventListener("click", (e) => {
       const b = e.target.closest("[data-voicemode]");
       if (!b) return;
@@ -7365,8 +7452,8 @@
       saveStore();
       render();
     });
-    document.getElementById("setNoiseFilter").addEventListener("change", (e) => {
-      state.settings.noiseFilter = !!e.target.checked;
+    document.getElementById("setMicPulse").addEventListener("change", (e) => {
+      state.settings.micPulse = !!e.target.checked;
       saveStore();
     });
     document.getElementById("calcClose").addEventListener("click", hideCalc);
@@ -7570,6 +7657,9 @@
   }
 
   loadStore();
+  if (state.settingsMigrated) {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch (e) { /* ignore */ }
+  }
   bind();
   render();
 })();
