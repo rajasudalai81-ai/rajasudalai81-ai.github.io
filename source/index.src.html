@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3A2416">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="கடை கணக்கு">
+  <title>கடை கணக்கு — Kadai Tracker</title>
+  <style>
+    :root {
+      --bg: #F3E6D0;
+      --paper: #FFFBF4;
+      --ink: #1C120C;
+      --muted: #5A4333;
+      --line: #E2CDB6;
+      --coffee: #3A2416;
+      --coffee-2: #5A3822;
+      --saffron: #C2610A;
+      --income: #0A6B3C;
+      --income-bg: #D9F3E6;
+      --expense: #B91C1C;
+      --expense-bg: #FDE4E2;
+      --profit: #1D4ED8;
+      --profit-bg: #E0EAFE;
+      --danger: #9B1C1C;
+      --shadow: 0 6px 18px rgba(28, 18, 12, 0.10);
+      --shadow-lg: 0 12px 28px rgba(28, 18, 12, 0.16);
+      --radius: 20px;
+      --safe-t: env(safe-area-inset-top, 0px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      /* Tamil-safe stack first. Do not put generic families (ui-sans-serif, sans-serif)
+         ahead of a real Tamil UI font — on some systems that picks a display face like Oi
+         for Tamil at heavy weights, which renders as unreadable blobs. */
+      font-family: "Noto Sans Tamil", "Noto Sans Tamil UI", "Hind Madurai", "Catamaran", "Mukta Malar", "Noto Sans Devanagari", "Noto Sans Devanagari UI", "Mukta", "Hind", "Nirmala UI", "Latha", "Mangal", "Tamil MN", "Tamil Sangam MN", "Kohinoor Devanagari", "Devanagari Sangam MN", system-ui, sans-serif;
+      background:
+        radial-gradient(900px 420px at 50% -8%, #FBE3B8 0%, transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      min-height: 100dvh;
+      font-size: 18px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; scroll-margin-bottom: 110px; }
+    input, textarea, select {
+      scroll-margin-bottom: 110px;
+      font-size: 18px;
+      min-height: 56px;
+    }
+    /* Hindi / Marathi: a Devanagari-safe stack first (weights stay <= 700). */
+    body.lang-hi, body.lang-mr {
+      font-family: "Noto Sans Devanagari", "Noto Sans Devanagari UI", "Mukta", "Hind", "Nirmala UI", "Mangal", "Kohinoor Devanagari", "Devanagari Sangam MN", "Noto Sans Tamil", "Hind Madurai", system-ui, sans-serif;
+    }
+    button .bi { align-items: center; }
+    .bi .en[hidden] { display: none; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+    .lang-grid button {
+      min-height: 64px; border-radius: 16px; border: 2px solid var(--line); background: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-weight: 700;
+    }
+    .lang-grid button .lg-n { font-size: 22px; line-height: 1.2; }
+    .lang-grid button .lg-e { font-size: 12px; opacity: 0.75; font-weight: 650; }
+    .lang-grid button.on { border-color: var(--coffee); background: var(--coffee); color: #fff; }
+    .lang-grid.big button { min-height: 92px; }
+    .lang-grid.big button .lg-n { font-size: 28px; }
+    .lang-first { position: fixed; inset: 0; z-index: 40; background: rgba(28,18,12,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .lang-first[hidden] { display: none !important; }
+    .lang-first-box { background: var(--paper); border-radius: 24px; padding: 20px 16px; width: min(420px, 100%); box-shadow: var(--shadow-lg); text-align: center; }
+    .lang-first-box h2 { margin: 4px 0 4px; font-size: 22px; font-weight: 700; }
+    .lang-first-ico { font-size: 40px; }
+    .toast-btns { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+    .toast-btns button[hidden] { display: none; }
+    #toastMsg { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+    #toastMsg .ta { font-size: 16px; }
+    #toastMsg .en { font-size: 12px; font-weight: 650; opacity: 0.85; }
+    #toastMsg .t-line { font-size: 14px; font-weight: 650; opacity: 0.95; }
+    #toastMsg .t-warn { color: #FFD7A8; font-size: 13px; }
+    #toastEdit { border: 1.5px solid #FFF8EE; background: transparent; color: #FFF8EE; border-radius: 999px; min-height: 40px; padding: 0 12px; font-weight: 700; white-space: nowrap; }
+    #toastUndo .en, #toastEdit .en { font-size: 10px; }
+    #toastUndo .ta, #toastEdit .ta { font-size: 14px; }
+    #toastUndo, #toastEdit { min-width: 84px; padding: 0 10px; }
+    #toastMsg .t-line { line-height: 1.25; }
+    .item .en-sub, .menu-btn .en-sub { display: block; font-size: 12px; font-weight: 650; opacity: 0.75; }
+    .meta.who { font-weight: 700; color: var(--coffee-2); }
+    .row.flash { animation: rowflash 1.6s ease 2; }
+    @keyframes rowflash { 0%,100% { box-shadow: var(--shadow); } 50% { box-shadow: 0 0 0 3px var(--saffron); } }
+    .tl { display: inline-flex; flex-direction: column; line-height: 1.15; vertical-align: top; }
+    .tl .en { display: block; font-size: 11px; font-weight: 650; opacity: 0.8; }
+    .lang-tog button { min-width: 64px; }
+    [hidden] { display: none !important; }
+    .bi { display: flex; flex-direction: column; align-items: inherit; line-height: 1.15; }
+    .bi .en { font-size: 12px; font-weight: 650; opacity: 0.8; letter-spacing: 0.01em; }
+    .app { max-width: 560px; margin: 0 auto; padding: calc(12px + var(--safe-t)) 14px calc(96px + var(--safe-b)); }
+    header.top {
+      background: linear-gradient(180deg, var(--coffee-2), var(--coffee));
+      color: #FFF8EE;
+      border-radius: 24px;
+      padding: 10px 12px 10px 14px;
+      box-shadow: var(--shadow-lg);
+    }
+    header.top .kicker { font-size: 12px; letter-spacing: 0.06em; opacity: 0.8; font-weight: 700; }
+    header.top h1 { margin: 2px 0 0; font-size: 18px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    header.top .sub { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+    .head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .icon-btn {
+      flex: 0 0 auto;
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.14);
+      border: 0; color: #FFF8EE; border-radius: 16px;
+      font-size: 26px; display: grid; place-items: center;
+    }
+    .date-bar { display: flex; align-items: center; gap: 8px; margin: 10px 0 10px; }
+    .date-bar .label { flex: 1; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .date-bar input[type="date"] {
+      border: 1px solid var(--line); background: var(--paper);
+      border-radius: 14px; padding: 8px 10px; min-height: 48px; font-weight: 700;
+    }
+    .linkish { border: 0; background: transparent; color: var(--saffron); font-weight: 700; padding: 8px; min-height: 44px; }
+
+    /* One big totals card */
+    .totals {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      background: var(--paper);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--line);
+    }
+    .tot { padding: 12px 6px 12px; text-align: center; }
+    .tot + .tot { border-left: 1px solid var(--line); }
+    .tot .k { font-size: 14px; font-weight: 700; align-items: center; }
+    .tot .v { font-size: clamp(20px, 6.2vw, 28px); font-weight: 700; margin-top: 6px; word-break: break-word; letter-spacing: -0.02em; }
+    .tot.income { background: var(--income-bg); color: var(--income); }
+    .tot.expense { background: var(--expense-bg); color: var(--expense); }
+    .tot.profit { background: var(--profit-bg); color: var(--profit); }
+    .tot.profit.neg { background: #FDE4E2; color: var(--expense); }
+    .pay-line { display: flex; justify-content: space-around; gap: 6px; margin: 8px 2px 0; font-size: 12px; color: var(--muted); font-weight: 700; }
+    .stock-alert {
+      background: #FFF3CD; border: 2px solid #D4A017; color: #5C4300;
+      border-radius: 14px; padding: 8px 12px; margin: 8px 0 0; font-weight: 700;
+      font-size: 14px;
+    }
+    .stock-alert .en { font-size: 12px; font-weight: 650; display: block; margin-top: 2px; }
+
+    /* v6: one giant mic, small + for manual sale/expense forms */
+    .speak-row {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin: 10px 0 8px;
+      min-height: 176px;
+    }
+    .mic-giant {
+      width: 168px; height: 168px;
+      border: 0; border-radius: 50%;
+      background: #1D4ED8; color: #fff;
+      box-shadow: 0 10px 24px rgba(29, 78, 216, 0.28);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; font-weight: 700;
+    }
+    .mic-giant .mic-ico, .mic-giant .mic-ico svg { width: 56px; height: 56px; display: block; }
+    .mic-giant .ta { font-size: 22px; }
+    .mic-giant .en { font-size: 12px; opacity: 0.9; }
+    .mic-giant.listening { background: var(--expense); animation: pulse 1s infinite; }
+    .mic-giant.off { background: #8A7768; box-shadow: none; }
+    @keyframes pulse { 50% { transform: scale(0.97); } }
+    .add-fab {
+      position: absolute; right: 0; top: 8px;
+      width: 56px; min-height: 72px;
+      border: 0; border-radius: 18px;
+      background: var(--coffee); color: #fff;
+      box-shadow: var(--shadow);
+      padding: 8px 4px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+      font-weight: 700;
+    }
+    .add-fab .add-ico, .add-fab .add-ico svg { width: 22px; height: 22px; display: block; }
+    .add-fab .ta { font-size: 11px; }
+    .add-fab .en { font-size: 10px; }
+    .add-menu {
+      position: absolute; right: 0; top: 88px; z-index: 8;
+      background: var(--paper); border-radius: 18px;
+      box-shadow: var(--shadow-lg); padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+      min-width: 168px;
+    }
+    .hero-btn {
+      border: 0; border-radius: 14px; min-height: 56px;
+      display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+      gap: 8px; padding: 8px 12px; font-weight: 700; color: #fff;
+    }
+    .hero-btn .ico, .hero-btn .ico svg { width: 24px; height: 24px; display: block; flex: 0 0 24px; }
+    .hero-btn .ta { font-size: 16px; }
+    .hero-btn.in, .go.in { background: var(--income); color: #fff; }
+    .hero-btn.ex, .go.ex { background: var(--expense); color: #fff; }
+    .hero-actions .go { min-height: 56px; font-size: 16px; }
+
+    .quick { display: flex; gap: 8px; margin: 0 0 12px; }
+    .quick input {
+      flex: 1; border: 1.5px solid var(--line); border-radius: 16px;
+      padding: 12px 14px; min-height: 56px; background: var(--paper);
+    }
+    .quick button, .save, .go, .ghost, .danger, .ok {
+      border-radius: 16px; min-height: 56px; font-weight: 700; border: 0;
+    }
+    .quick button { background: var(--coffee); color: #fff; padding: 0 16px; }
+    .save { background: var(--income); color: #fff; width: 100%; font-size: 18px; }
+    .voice-panel {
+      background: var(--paper); border-radius: 20px; padding: 12px;
+      margin: 0 0 12px; box-shadow: var(--shadow); display: none;
+    }
+    .voice-panel.open, .voice-panel.has-note { display: block; }
+    .lang-tog { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .lang-tog button {
+      border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 10px 14px; font-weight: 700; font-size: 14px; min-height: 44px;
+    }
+    .lang-tog button.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .live-box {
+      min-height: 48px; margin-top: 6px; padding: 12px;
+      background: #F8EED9; border-radius: 14px; text-align: left; font-weight: 700;
+    }
+    .live-box .interim { color: var(--muted); font-weight: 500; }
+    .voice-error {
+      margin-top: 10px; text-align: left; background: #FCECEA; color: var(--danger);
+      border-radius: 12px; padding: 10px 12px; font-weight: 700;
+    }
+    .voice-error .en { font-size: 12px; font-weight: 650; opacity: 0.9; display: block; margin-top: 2px; }
+    .voice-note { font-size: 14px; color: var(--muted); margin: 8px 0 0; font-weight: 700; }
+
+    h2.sec { font-size: 16px; margin: 6px 2px 10px; font-weight: 700; }
+    .qty-pick {
+      margin: 0 0 10px; background: var(--paper); border-radius: 20px;
+      padding: 10px; box-shadow: var(--shadow);
+    }
+    .qty-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .qty-pick .lab { font-weight: 700; margin-right: auto; }
+    .qty-chips { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+    .qty-pick button, .qty-val {
+      border: 1.5px solid var(--line); background: #fff; border-radius: 16px;
+      min-width: 48px; min-height: 52px; font-weight: 700; font-size: 20px; padding: 0 10px;
+    }
+    .qty-chips button { width: 100%; min-height: 56px; }
+    .qty-pick button.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .qty-val { display: inline-flex; align-items: center; justify-content: center; background: #F8EED9; min-width: 56px; }
+
+    .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 0 0 18px; }
+    .menu-btn {
+      scroll-margin-bottom: 120px;
+      background: var(--paper); border: 1.5px solid var(--line); border-radius: 22px;
+      padding: 10px 6px 12px; min-height: 110px; box-shadow: var(--shadow); text-align: center;
+    }
+    .menu-btn .menu-ico, .menu-btn .menu-ico svg { width: 52px; height: 52px; display: block; margin: 0 auto 4px; }
+    .menu-btn.on-qty { border-color: var(--coffee); box-shadow: 0 0 0 2px var(--coffee); }
+    .menu-btn .nm { font-weight: 700; font-size: 15px; }
+    .menu-btn .pr { color: var(--income); font-weight: 700; margin-top: 4px; font-size: 16px; }
+
+    .empty { background: var(--paper); border-radius: var(--radius); padding: 28px 16px; text-align: center; color: var(--muted); box-shadow: var(--shadow); font-weight: 700; }
+    .row {
+      background: var(--paper); border-radius: 20px; padding: 14px 14px 12px;
+      margin: 0 0 10px; box-shadow: var(--shadow);
+      border-left: 7px solid var(--line);
+      display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: start;
+    }
+    .row.in { border-left-color: var(--income); }
+    .row.ex { border-left-color: var(--expense); }
+    .row-main { min-width: 0; }
+    .item { font-weight: 700; font-size: 18px; margin: 0; }
+    .row-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .amt { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; text-align: right; }
+    .row.in .amt { color: var(--income); }
+    .row.ex .amt { color: var(--expense); }
+    .kind, .pay, .adj-tag {
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+    }
+    .row.in .kind { background: var(--income-bg); color: var(--income); }
+    .row.ex .kind { background: var(--expense-bg); color: var(--expense); }
+    .pay.cash { background: #EEE7DC; }
+    .pay.upi { background: #E0EAFE; color: #1D4ED8; }
+    .pay.credit { background: #F8EED9; color: var(--saffron); }
+    .adj-tag { background: #F8EED9; color: var(--saffron); }
+    .row-actions { grid-column: 1 / -1; display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .btn-edit, .btn-del, .qty-btn {
+      border: 1.5px solid var(--line); background: #fff; border-radius: 14px;
+      min-width: 48px; min-height: 48px; font-size: 20px; padding: 0 10px;
+    }
+    .btn-del { color: var(--expense); }
+    .row-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+    .hero-actions .go { min-height: 96px; font-size: 16px; }
+
+    .tabbar {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: 0; width: min(560px, 100%);
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+      background: var(--coffee); color: #FFF8EE;
+      padding: 6px 4px calc(8px + var(--safe-b));
+      z-index: 15; box-shadow: 0 -8px 24px rgba(42,28,18,0.18);
+    }
+    .tabbar button {
+      background: transparent; border: 0; color: inherit;
+      padding: 6px 2px; min-height: 64px; opacity: 0.7; border-radius: 14px;
+      font-weight: 700;
+    }
+    .tabbar button .ico, .tabbar button .ico svg { width: 26px; height: 26px; display: block; margin: 0 auto 2px; color: #FFF8EE; }
+    .tabbar button .ta { font-size: 12px; }
+    .tabbar button.on { opacity: 1; background: rgba(255,255,255,0.14); }
+    .panel[hidden], .sheet[hidden], .confirm[hidden], .settings[hidden], .modal[hidden], .backdrop[hidden], .voice-panel[hidden], .qty-pick[hidden], .add-menu[hidden] {
+      display: none !important;
+    }
+    .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; font-weight: 700; }
+
+    .shop-sub { display: flex; gap: 6px; margin: 0 0 12px; }
+    .shop-sub button {
+      flex: 1; border: 1.5px solid var(--line); background: #fff; border-radius: 14px;
+      min-height: 52px; font-weight: 700; padding: 6px 4px;
+    }
+    .shop-sub button.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .stock-item, .margin-item, .staff-item {
+      display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid var(--line);
+    }
+    .stock-item:last-child, .margin-item:last-child, .staff-item:last-child { border-bottom: 0; }
+    .badge { display: inline-block; border-radius: 999px; padding: 4px 8px; font-weight: 700; font-size: 13px; }
+    .badge.ok { background: #D9F3E6; color: var(--income); }
+    .badge.warn { background: #FFF3CD; color: #8A5A00; }
+    .shop-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .shop-actions button { min-height: 52px; border-radius: 12px; padding: 4px 6px; font-weight: 700; font-size: 13px; border: 1.5px solid var(--line); background: #fff; scroll-margin-bottom: 100px; }
+    .shop-form { margin-top: 10px; }
+    .shop-form[hidden] { display: none !important; }
+    .cost-in { width: 88px; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px; min-height: 48px; text-align: right; }
+    label.check { display: flex; align-items: flex-start; gap: 8px; font-weight: 700; }
+    label.check input { width: auto; min-height: 22px; margin-top: 3px; }
+    #stockItemSel { width: 100%; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px; min-height: 56px; background: #fff; }
+
+    .card { background: var(--paper); border-radius: 20px; padding: 14px; margin: 0 0 12px; box-shadow: var(--shadow); }
+    .kadan-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .menu-edit { border: 1.5px solid var(--line); border-radius: 14px; padding: 10px; margin: 8px 0; background: #fff; }
+    .menu-edit input { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px; min-height: 48px; margin: 4px 0; }
+
+    .backdrop {
+      position: fixed; inset: 0; background: rgba(28,18,12,0.45);
+      z-index: 20; border: 0;
+    }
+    .sheet, .confirm, .settings, .modal {
+      position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+      width: min(560px, 100%); max-height: 92dvh; overflow: auto;
+      background: var(--paper); border-radius: 24px 24px 0 0;
+      padding: 16px 16px calc(20px + var(--safe-b));
+      z-index: 25; box-shadow: var(--shadow-lg);
+    }
+    .sheet, .confirm { display: flex; flex-direction: column; padding-bottom: 0; }
+    .confirm-body-scroll { min-height: 0; overflow: auto; }
+
+    #entryForm { display: flex; flex-direction: column; min-height: 0; }
+    .sheet-foot {
+      position: sticky; bottom: 0;
+      background: var(--paper);
+      margin: 12px -16px 0;
+      padding: 10px 16px calc(14px + var(--safe-b));
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 18px rgba(28,18,12,0.08);
+    }
+    .sheet-foot .lab { margin-top: 0; }
+    .calc:empty, .calc.is-empty { display: none; }
+    .sheet-h, .settings-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .sheet-h h3, .settings h2, .confirm h3 { margin: 0; font-size: 20px; font-weight: 700; }
+    .x {
+      width: 48px; height: 48px; border: 0; border-radius: 14px;
+      background: #F0E7DB; font-size: 24px; font-weight: 700;
+    }
+    .lab { display: block; font-weight: 700; margin: 12px 0 6px; font-size: 15px; }
+    .lab.bi { display: flex; flex-direction: column; align-items: flex-start; }
+    .set-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .set-h h3 { margin: 0; }
+    .full, .field input, .field select, textarea, select {
+      width: 100%; border: 1.5px solid var(--line); border-radius: 14px;
+      padding: 12px 14px; min-height: 56px; background: #fff; font-size: 18px;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .hint { color: var(--muted); font-size: 13px; font-weight: 700; margin-top: 4px; min-height: 0; }
+    .calc { margin: 8px 0; padding: 10px 12px; background: #F8EED9; border-radius: 12px; font-weight: 700; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip, .pay-chip {
+      border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 8px 12px; min-height: 44px; font-weight: 700; font-size: 14px;
+    }
+    .chip.on, .pay-chip.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .more-btn {
+      width: 100%; margin: 0 0 10px; border: 1.5px dashed var(--line);
+      background: #F8EED9; border-radius: 16px; min-height: 48px; font-weight: 700;
+    }
+    .more-btn[aria-expanded="true"] { background: #F0E7DB; }
+    #moreFields[hidden] { display: none !important; }
+    .form-error, .note-req { color: var(--expense); font-weight: 700; margin: 8px 0; }
+    .lab.required::after { content: " *"; color: var(--expense); }
+    .bulk-head { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; font-weight: 700; }
+    .bulk-head input { width: auto; min-height: 22px; margin-top: 4px; }
+    .modal-q { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+    .modal-d { margin: 0 0 8px; }
+    .modal-warn { color: var(--muted); font-size: 14px; font-weight: 700; }
+    .modal-actions, .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .confirm-actions.v6 {
+      display: flex; flex-direction: column; gap: 8px;
+      position: sticky; bottom: 0;
+      background: var(--paper);
+      margin: 8px -16px 0;
+      padding: 10px 16px calc(14px + var(--safe-b));
+      border-top: 1.5px solid var(--line);
+      box-shadow: 0 -8px 18px rgba(28,18,12,0.08);
+    }
+    .confirm-actions.v6 #confirmSave {
+      min-height: 64px; width: 100%; font-size: 22px; font-weight: 700;
+      border: 0; border-radius: 16px; background: var(--income); color: #fff;
+    }
+    .confirm-actions.v6 #confirmSave:focus { outline: 3px solid #86EFAC; outline-offset: 2px; }
+    .confirm-side { display: flex; justify-content: center; gap: 8px; }
+    .confirm-side .ghost {
+      background: transparent; color: var(--muted); min-height: 44px; font-size: 15px; padding: 0 12px;
+    }
+    .pair-margin {
+      text-align: center; background: var(--profit-bg); color: var(--profit);
+      border-radius: 16px; padding: 8px 12px; margin: 0 0 8px; font-weight: 700; font-size: 22px;
+    }
+    .pair-margin .en { display: block; font-size: 13px; font-weight: 650; opacity: 0.85; margin-top: 2px; }
+    .pair-margin.neg { background: #FDE4E2; color: var(--expense); }
+
+    .ghost { background: #F0E7DB; }
+    .danger { background: var(--danger); color: #fff; }
+    .ok { background: var(--income); color: #fff; }
+    .settings p.help, .help { color: var(--muted); font-size: 14px; font-weight: 650; }
+    .cf-row { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .cf-row:last-child { border-bottom: 0; }
+    .cf-row.uncertain { background: #F8EED9; margin: 0 -8px; padding: 8px; border-radius: 10px; border: 1px dashed var(--saffron); }
+    .check-tag { display: block; color: var(--saffron); font-size: 12px; font-weight: 700; margin-top: 2px; }
+    .confirm-lines { margin-top: 8px; }
+    .confirm-line { border: 1.5px solid var(--line); border-radius: 14px; padding: 6px 10px; margin: 0 0 6px; }
+    #confirmTranscript { width: 100%; min-height: 48px; border: 1.5px solid var(--line); border-radius: 14px; padding: 8px 10px; margin: 4px 0 8px; background: #fff; }
+    #toast {
+      position: fixed; left: 50%; bottom: calc(88px + var(--safe-b));
+      transform: translateX(-50%) translateY(20px);
+      background: var(--coffee); color: #FFF8EE;
+      border-radius: 16px; padding: 12px 14px; z-index: 18;
+      font-weight: 700; max-width: min(420px, calc(100% - 24px));
+      display: flex; align-items: center; gap: 10px;
+      opacity: 0; pointer-events: none; transition: 0.2s ease;
+      box-shadow: var(--shadow-lg);
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #toastUndo {
+      border: 0; background: #FFF8EE; color: var(--coffee);
+      border-radius: 999px; min-height: 40px; padding: 0 12px; font-weight: 700; white-space: nowrap;
+    }
+    .stock-alert .ta, .stock-alert .en {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    }
+    @media (max-width: 420px) {
+      header.top .kicker, header.top .sub { display: none; }
+      .mic-giant { width: 148px; height: 148px; }
+      .menu-btn { min-height: 104px; padding: 8px 6px; }
+      .tot .v { font-size: 20px; }
+    }
+
+    /* v8 */
+    .date-bar .label { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; min-width: 0; }
+    .date-bar input[type=date] { max-width: 150px; flex: 0 0 auto; }
+    .lang-grid button .lg-n { font-size: 18px; }
+    .lang-grid.big button .lg-n { font-size: 22px; }
+    .lang-tog .lg-n { font-size: inherit; }
+    .unit-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+    .unit-chips button { border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 10px; font-weight: 700; min-height: 40px; }
+    .unit-chips button.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .unit-chips button .en { font-size: 10px; }
+    .calc-card { background: #FFF8E6; border: 2px solid var(--saffron); border-radius: 18px; padding: 12px 14px; margin: 10px 0; }
+    .calc-top { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+    .calc-top .x { width: 36px; height: 36px; }
+    .calc-expr { font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--muted); }
+    .calc-res { font-size: 34px; font-weight: 700; margin: 2px 0 10px; }
+    .calc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .calc-btns button { min-height: 52px; border-radius: 14px; border: 0; font-weight: 700; }
+    .calc-btns .ok { background: var(--green, #0A6B3C); color: #fff; }
+    .calc-btns .danger { background: #B91C1C; color: #fff; }
+    .level-wrap { margin: 6px 0; }
+    .level-meter { display: flex; gap: 4px; align-items: flex-end; height: 26px; justify-content: center; }
+    .level-meter i { display: block; width: 10px; height: 4px; border-radius: 3px; background: #CBBBA8; transition: height .08s linear, background .08s linear; }
+    .level-meter i.on { background: #0A6B3C; }
+    .level-meter i.hot { background: #D97706; }
+    .mic-giant.listening { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.22); animation: micRing 1.4s ease-in-out infinite; }
+    .mic-giant.listening.hearing { animation-duration: .6s; }
+    @keyframes micRing { 0%, 100% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.25); } 50% { box-shadow: 0 0 0 22px rgba(37, 99, 235, 0.08); } }
+    .listen-state { margin: 8px 0 4px; padding: 8px 12px; border-radius: 12px; background: #FDECEC; color: #9B1C1C; font-weight: 700; text-align: center; }
+    .listen-state.starting { background: #FFF4DB; color: #7A4B00; }
+    .listen-state.hearing { background: #E6F4EA; color: #0A6B3C; }
+    .level-meter[hidden] { display: none !important; }
+    .level-meter.pulse i { animation: lvlPulse .5s ease-in-out infinite alternate; background: #0A6B3C; }
+    .level-meter.pulse i:nth-child(2n) { animation-delay: .12s; }
+    .level-meter.pulse i:nth-child(3n) { animation-delay: .25s; }
+    @keyframes lvlPulse { from { height: 4px; } to { height: 24px; } }
+    .heard-lab { color: var(--muted); font-weight: 600; font-size: .85em; }
+    .person-card h3 { margin: 0 0 6px; font-size: 17px; }
+    .person-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px; margin: 6px 0; min-height: 52px; }
+    .person-row.on { border-color: var(--coffee); background: #F6EDE2; }
+    .person-row .pn { font-weight: 700; font-size: 17px; }
+    .person-row .pv { text-align: right; font-size: 13px; font-weight: 700; line-height: 1.35; }
+    .person-row .give { color: #B91C1C; }
+    .person-row .get { color: #0A6B3C; }
+    .filter-bar { margin: 4px 0 8px; }
+    .filter-bar button { border: 0; background: var(--coffee); color: #fff; border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 40px; }
+    .meta.calc { color: #7C4A03; }
+    .check-row { display: flex; gap: 10px; align-items: center; margin: 10px 0 4px; font-weight: 700; }
+    .check-row input { width: 24px; height: 24px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="head-row">
+        <div>
+          <div class="kicker bi"><span class="ta">கடை கணக்கு</span><span class="en">Kadai Tracker</span></div>
+          <h1 id="shopName">இட்லி தோசை டீ கடை</h1>
+          <div class="sub">இட்லி • தோசை • டீ — Mumbai</div>
+        </div>
+        <button type="button" class="icon-btn" id="btnSettings" aria-label="அமைப்புகள் / Settings" data-i18n-aria="அமைப்புகள்|Settings">⚙</button>
+      </div>
+    </header>
+
+    <div class="date-bar">
+      <div class="label" id="dateLabel"></div>
+      <button type="button" class="linkish" id="todayBtn" hidden><span class="bi" style="align-items:flex-end"><span class="ta">இன்று</span><span class="en">Today</span></span></button>
+      <input type="date" id="dateInput" aria-label="தேதி / Date" data-i18n-aria="தேதி|Date">
+    </div>
+
+    <section class="totals" aria-label="இன்றைய கணக்கு / Today's totals" data-i18n-aria="இன்றைய கணக்கு|Today's totals">
+      <div class="tot income"><div class="k bi" style="align-items:center"><span class="ta">வரவு</span><span class="en">Income</span></div><div class="v" id="totIncome">₹0</div></div>
+      <div class="tot expense"><div class="k bi" style="align-items:center"><span class="ta">செலவு</span><span class="en">Expense</span></div><div class="v" id="totExpense">₹0</div></div>
+      <div class="tot profit"><div class="k bi" style="align-items:center"><span class="ta">லாபம்</span><span class="en">Profit</span></div><div class="v" id="totProfit">₹0</div></div>
+    </section>
+    <div class="pay-line" id="payLine"></div>
+    <div class="stock-alert bi" id="stockAlert" hidden>
+      <span class="ta" id="stockAlertTa"></span>
+      <span class="en" id="stockAlertEn"></span>
+    </div>
+
+    <div id="panelToday" class="panel">
+      <div class="speak-row">
+        <button type="button" class="mic-giant" id="micBig" aria-label="குரல் / Voice" data-i18n-aria="குரல்|Voice">
+          <span class="mic-ico" id="micIcon" aria-hidden="true"></span>
+          <span class="bi" style="align-items:center"><span class="ta" id="micLabel">பேசு</span><span class="en" id="micLabelEn">Speak</span></span>
+        </button>
+        <button type="button" class="add-fab" id="btnAdd" aria-label="வரவு அல்லது செலவு / Add sale or expense" data-i18n-aria="வரவு அல்லது செலவு|Add sale or expense" aria-expanded="false" aria-controls="addMenu">
+          <span class="add-ico" id="addIcon" aria-hidden="true"></span>
+          <span class="bi" style="align-items:center"><span class="ta">மேலும்</span><span class="en">Add</span></span>
+        </button>
+        <div class="add-menu" id="addMenu" hidden>
+          <button type="button" class="hero-btn in" id="btnIncome">
+            <span class="ico" id="icoIncome" aria-hidden="true"></span>
+            <span class="bi" style="align-items:flex-start"><span class="ta">வரவு</span><span class="en">Sale</span></span>
+          </button>
+          <button type="button" class="hero-btn ex" id="btnExpense">
+            <span class="ico" id="icoExpense" aria-hidden="true"></span>
+            <span class="bi" style="align-items:flex-start"><span class="ta">செலவு</span><span class="en">Expense</span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="quick">
+        <input id="quickEntry" autocomplete="off" enterkeyhint="done" placeholder="20000 போடு / 100 டீ ரவி பேருக்கு">
+        <button type="button" id="quickBtn"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+      </div>
+
+      <div class="calc-card" id="calcCard" hidden role="status">
+        <div class="calc-top">
+          <span class="bi"><span class="ta">கணக்கு</span><span class="en">Calculator</span></span>
+          <button type="button" class="x" id="calcClose" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
+        </div>
+        <div class="calc-expr" id="calcExpr"></div>
+        <div class="calc-res" id="calcRes"></div>
+        <div class="calc-btns">
+          <button type="button" class="ok" id="calcIncome"><span class="bi" style="align-items:center"><span class="ta">வரவாக சேமி</span><span class="en">Save as income</span></span></button>
+          <button type="button" class="danger" id="calcExpense"><span class="bi" style="align-items:center"><span class="ta">செலவாக சேமி</span><span class="en">Save as expense</span></span></button>
+        </div>
+      </div>
+
+      <div class="voice-panel" id="voicePanel">
+        <div class="lang-tog" id="langTog">
+          <button type="button" data-lang="ta-IN" class="on"><span class="lg-n">தமிழ்</span></button>
+          <button type="button" data-lang="en-IN"><span class="lg-n">English</span></button>
+          <button type="button" data-lang="hi-IN"><span class="lg-n">हिंदी</span></button>
+          <button type="button" data-lang="mr-IN"><span class="lg-n">मराठी</span></button>
+        </div>
+        <div class="listen-state" id="listenState" role="status" aria-live="polite" hidden></div>
+        <div class="level-wrap" id="levelWrap" hidden>
+          <div class="level-meter" id="levelMeter" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="help bi" id="closeTip"><span class="ta">📱 போனை வாய்க்கு அருகில் வைத்து பேசுங்கள்</span><span class="en">Speak close to the phone</span></div>
+        </div>
+        <div class="live-box" id="liveBox"><span class="en">…</span></div>
+        <div class="voice-error bi" id="voiceError" hidden>
+          <span class="ta" id="voiceErrorTa"></span>
+          <span class="en" id="voiceErrorEn"></span>
+        </div>
+        <p class="voice-note" id="voiceNote" hidden><span class="bi"><span class="ta">குரல் இந்த தொலைபேசியில் இல்லை — கீழே தட்டச்சு செய்தால் போதும்.</span><span class="en">Voice not available — type the same sentence below.</span></span></p>
+      </div>
+
+      <h2 class="sec bi"><span class="ta">விரைவு மெனு</span><span class="en">Quick menu — tap once to add 1, long-press for qty</span></h2>
+      <div class="qty-pick" id="qtyPick" hidden>
+        <div class="qty-top">
+          <span class="lab bi"><span class="ta">அளவு</span><span class="en">Qty</span></span>
+          <button type="button" data-qty-delta="-1" aria-label="Minus">−</button>
+          <span class="qty-val" id="qtyVal">1</span>
+          <button type="button" data-qty-delta="1" aria-label="Plus">+</button>
+        </div>
+        <div class="qty-chips">
+          <button type="button" data-setqty="1" class="on">1</button>
+          <button type="button" data-setqty="2">2</button>
+          <button type="button" data-setqty="5">5</button>
+          <button type="button" data-setqty="10">10</button>
+        </div>
+      </div>
+      <div class="menu-grid" id="menuGrid"></div>
+
+      <h2 class="sec bi"><span class="ta">இன்றைய பதிவுகள்</span><span class="en">Today's entries</span></h2>
+      <div class="filter-bar" id="filterBar" hidden></div>
+      <div id="entryList"></div>
+      <div class="card person-card" id="personCard" hidden></div>
+    </div>
+
+    <div id="panelKadan" class="panel" hidden>
+      <h2 class="sec bi"><span class="ta">கடன் புத்தகம்</span><span class="en">Credit book — who still owes</span></h2>
+      <div id="kadanList"></div>
+    </div>
+
+    <div id="panelSummary" class="panel" hidden>
+      <div class="card" id="eodCard"></div>
+      <button type="button" class="save" id="btnWhatsApp"><span class="bi" style="align-items:center"><span class="ta">வாட்ஸ்அப்பில் பகிர்</span><span class="en">Share to WhatsApp</span></span></button>
+      <div class="card" id="weekCard" style="margin-top:12px"></div>
+      <div class="card" id="monthCard"></div>
+      <div class="card person-card" id="personSumCard"></div>
+      <div class="card" id="topCard"></div>
+      <button type="button" class="ghost" id="btnCsv" style="width:100%"><span class="bi" style="align-items:center"><span class="ta">Excel-க்கு CSV பதிவிறக்கம்</span><span class="en">Download CSV for Excel</span></span></button>
+    </div>
+
+    <div id="panelShop" class="panel" hidden>
+      <div class="shop-sub" id="shopSub">
+        <button type="button" class="on" data-shop="stock"><span class="bi" style="align-items:center"><span class="ta">இருப்பு</span><span class="en">Stock</span></span></button>
+        <button type="button" data-shop="margins"><span class="bi" style="align-items:center"><span class="ta">லாபம்</span><span class="en">Margins</span></span></button>
+        <button type="button" data-shop="staff"><span class="bi" style="align-items:center"><span class="ta">பணியாளர்</span><span class="en">Staff</span></span></button>
+      </div>
+
+      <div id="shopStock">
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">சரக்கு இருப்பு</span><span class="en">Stock on hand</span></h2>
+          <div class="shop-actions">
+            <button type="button" id="btnStockIn"><span class="bi"><span class="ta">+ இருப்பு</span><span class="en">Add stock</span></span></button>
+            <button type="button" id="btnStockOut"><span class="bi"><span class="ta">பயன்படுத்து</span><span class="en">Use</span></span></button>
+            <button type="button" id="btnStockNew"><span class="bi"><span class="ta">+ பொருள்</span><span class="en">New item</span></span></button>
+          </div>
+          <form class="shop-form" id="stockMoveForm" hidden>
+            <input type="hidden" id="stockMoveKind" value="in">
+            <label class="lab bi" for="stockItemSel"><span class="ta">பொருள்</span><span class="en">Item</span></label>
+            <select id="stockItemSel" class="full"></select>
+            <div class="row2">
+              <div>
+                <label class="lab bi" for="stockQty"><span class="ta">அளவு</span><span class="en">Qty</span></label>
+                <input id="stockQty" inputmode="decimal" placeholder="0">
+              </div>
+              <div id="stockAmtWrap">
+                <label class="lab bi" for="stockAmount"><span class="ta">தொகை (₹)</span><span class="en">Amount (₹)</span></label>
+                <input id="stockAmount" inputmode="decimal" placeholder="optional">
+              </div>
+            </div>
+            <label class="lab bi" for="stockNote"><span class="ta">குறிப்பு</span><span class="en">Note</span></label>
+            <input id="stockNote" class="full" placeholder="optional">
+            <label class="check" id="stockLogWrap" style="margin-top:8px">
+              <input type="checkbox" id="stockLogExpense" checked>
+              <span class="bi"><span class="ta">செலவாகவும் பதிவு செய்</span><span class="en">Also log as an expense</span></span>
+            </label>
+            <div class="shop-actions">
+              <button type="submit" class="save" id="stockMoveSave" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="stockMoveCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+            <div class="form-error" id="stockMoveError"></div>
+          </form>
+          <form class="shop-form" id="stockNewForm" hidden>
+            <label class="lab bi" for="newStockTa"><span class="ta">தமிழ் பெயர்</span><span class="en">Tamil name</span></label>
+            <input id="newStockTa" class="full">
+            <label class="lab bi" for="newStockEn"><span class="ta">English name</span><span class="en">English name</span></label>
+            <input id="newStockEn" class="full">
+            <div class="row2">
+              <div>
+                <label class="lab bi" for="newStockUnit"><span class="ta">அலகு</span><span class="en">Unit</span></label>
+                <input id="newStockUnit" value="கிலோ">
+              </div>
+              <div>
+                <label class="lab bi" for="newStockMin"><span class="ta">குறைந்த இருப்பு</span><span class="en">Low-stock at</span></label>
+                <input id="newStockMin" inputmode="decimal" value="2">
+              </div>
+            </div>
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="stockNewCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+          </form>
+          <div id="stockList"></div>
+        </div>
+        <div class="card" style="background:#FFF9E6">
+          <strong class="bi"><span class="ta">குறைந்த இருப்பு எச்சரிக்கை</span><span class="en">Low-stock alerts</span></strong>
+          <p class="help" id="stockAlertBox" style="margin:6px 0 0"><span class="bi"><span class="ta">அனைத்து பொருட்களும் போதிய அளவில் உள்ளன.</span><span class="en">All tracked items are above the alert level.</span></span></p>
+        </div>
+      </div>
+
+      <div id="shopMargins" hidden>
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">இன்றைய பொருள் லாபம்</span><span class="en">Today's profit from sales (after ingredient cost)</span></h2>
+          <div id="dayMarginBox"></div>
+        </div>
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">ஒரு அலகு லாபம்</span><span class="en">Set making cost per item, then see unit profit</span></h2>
+          <div id="marginList"></div>
+          <button type="button" class="save" id="saveMargins" style="margin-top:10px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save costs</span></span></button>
+        </div>
+      </div>
+
+      <div id="shopStaff" hidden>
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">பணியாளர் கூலி</span><span class="en">Staff wages — paid wages and advances count as expenses</span></h2>
+          <div class="shop-actions">
+            <button type="button" id="btnAddStaff"><span class="bi"><span class="ta">+ பணியாளர்</span><span class="en">Add staff</span></span></button>
+          </div>
+          <form class="shop-form" id="staffForm" hidden>
+            <label class="lab bi" for="staffName"><span class="ta">பெயர்</span><span class="en">Name</span></label>
+            <input id="staffName" class="full" placeholder="எ.கா. முருகன்">
+            <div class="row2">
+              <div>
+                <label class="lab bi" for="staffDaily"><span class="ta">தினக்கூலி (₹)</span><span class="en">Daily wage (₹)</span></label>
+                <input id="staffDaily" inputmode="decimal" placeholder="700">
+              </div>
+              <div>
+                <label class="lab bi" for="staffWeekly"><span class="ta">வாரக் கூலி (₹)</span><span class="en">Weekly wage (₹)</span></label>
+                <input id="staffWeekly" inputmode="decimal" placeholder="4200">
+              </div>
+            </div>
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="staffFormCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+            <div class="form-error" id="staffFormError"></div>
+          </form>
+          <form class="shop-form" id="wageForm" hidden>
+            <input type="hidden" id="wageStaffId">
+            <input type="hidden" id="wageKind">
+            <p class="help" id="wageFormTitle"></p>
+            <label class="lab bi" for="wageAmount"><span class="ta">தொகை (₹)</span><span class="en">Amount (₹)</span></label>
+            <input id="wageAmount" inputmode="decimal">
+            <label class="lab bi" for="wageNote"><span class="ta">குறிப்பு</span><span class="en">Note</span></label>
+            <input id="wageNote" class="full">
+            <label class="check" id="wagePaidWrap" style="margin-top:8px">
+              <input type="checkbox" id="wagePaid" checked>
+              <span class="bi"><span class="ta">இப்போது செலுத்தினேன் (செலவு)</span><span class="en">Paid now (counts as expense)</span></span>
+            </label>
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="wageFormCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+            <div class="form-error" id="wageFormError"></div>
+          </form>
+          <div id="staffList"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="foot bi" style="align-items:center"><span class="ta">தட்டச்சு முதன்மை வழி. குரல் ஒரு கூடுதல் வசதி. பதிவுகள் இந்த தொலைபேசியிலேயே சேமிக்கப்படும்.</span><span class="en">Typing is the main path. Voice is extra. Data stays on this phone.</span></p>
+  </div>
+
+  <nav class="tabbar" aria-label="Sections">
+    <button type="button" class="on" id="navToday" data-tab="Today"><span class="ico" data-ico="today" aria-hidden="true"></span><span class="bi" style="align-items:center"><span class="ta">இன்று</span><span class="en">Today</span></span></button>
+    <button type="button" id="navKadan" data-tab="Kadan"><span class="ico" data-ico="credit" aria-hidden="true"></span><span class="bi" style="align-items:center"><span class="ta">கடன்</span><span class="en">Credit</span></span></button>
+    <button type="button" id="navShop" data-tab="Shop"><span class="ico" data-ico="stock" aria-hidden="true"></span><span class="bi" style="align-items:center"><span class="ta">கடை</span><span class="en">Shop</span></span></button>
+    <button type="button" id="navSummary" data-tab="Summary"><span class="ico" data-ico="summary" aria-hidden="true"></span><span class="bi" style="align-items:center"><span class="ta">சுருக்கம்</span><span class="en">Summary</span></span></button>
+  </nav>
+
+  <div class="backdrop" id="backdrop" hidden></div>
+
+  <div class="confirm" id="confirmCard" hidden role="dialog" aria-modal="true">
+    <h3 class="bi"><span class="ta">இதைச் சேமிக்கவா?</span><span class="en">Does this look right?</span></h3>
+    <label class="lab bi" for="confirmTranscript"><span class="ta">வாக்கியம் (திருத்தலாம்)</span><span class="en">Sentence — edit if misheard</span></label>
+    <textarea id="confirmTranscript"></textarea>
+    <div id="confirmBody"></div>
+    <div class="confirm-actions v6">
+      <button type="button" class="ok" id="confirmSave"><span class="bi" style="align-items:center"><span class="ta">✓ சேமி</span><span class="en">Save</span></span></button>
+      <div class="confirm-side">
+        <button type="button" class="ghost" id="confirmEdit"><span class="bi" style="align-items:center"><span class="ta">திருத்து</span><span class="en">Edit</span></span></button>
+        <button type="button" class="ghost" id="confirmCancel"><span class="bi" style="align-items:center"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+      </div>
+    </div>
+    <div class="form-error" id="confirmError"></div>
+  </div>
+
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
+    <div class="sheet-h">
+      <h3 id="formTitle">புதிய வரவு</h3>
+      <button type="button" class="x" id="closeForm" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
+    </div>
+    <form id="entryForm" action="javascript:void(0)" novalidate>
+      <label class="lab bi" for="fldItem"><span class="ta">பொருள் / விவரம்</span><span class="en">Item / details</span></label>
+      <div class="chips" id="chips"></div>
+      <div class="field" style="margin-top:8px">
+        <input class="full" id="fldItem" name="item" autocomplete="off" placeholder="எ.கா. இட்லி, அரிசி, எண்ணெய்">
+      </div>
+
+      <div class="row2">
+        <div>
+          <label class="lab bi" for="fldQty"><span class="ta">அளவு</span><span class="en">Quantity</span></label>
+          <div class="field">
+            <input id="fldQty" name="qty" inputmode="decimal" autocomplete="off" placeholder="3 / மூன்று / moonu">
+          </div>
+          <div class="hint" id="hintQty"></div>
+        </div>
+        <div>
+          <label class="lab bi" for="fldUnit"><span class="ta">அலகு</span><span class="en">Unit</span></label>
+          <select id="fldUnit">
+            <option>கிலோ</option>
+            <option>லிட்டர்</option>
+            <option>கிளாஸ்</option>
+            <option>பொட்டலம்</option>
+            <option>எண்ணிக்கை</option>
+            <option>கிராம்</option>
+            <option>டஜன்</option>
+            <option>மூட்டை</option>
+            <option>சிலிண்டர்</option>
+          </select>
+        </div>
+      </div>
+      <div class="unit-chips" id="unitChips"></div>
+
+      <label class="lab bi" for="fldUnitPrice"><span class="ta">ஒரு அலகு விலை</span><span class="en">Unit price</span></label>
+      <div class="field"><input id="fldUnitPrice" inputmode="decimal" autocomplete="off" placeholder="ஐம்பது / 50 / aimbadhu"></div>
+      <div class="hint" id="hintUnitPrice"></div>
+
+      <label class="lab bi" for="fldAmount"><span class="ta">மொத்தத் தொகை (₹)</span><span class="en">Total amount (₹)</span></label>
+      <div class="field"><input id="fldAmount" inputmode="decimal" autocomplete="off" placeholder="நூற்றி ஐம்பது / 150"></div>
+      <div class="hint" id="hintAmount"></div>
+      <div class="calc" id="calcPreview"></div>
+
+      <div id="moreFields" hidden>
+      <label class="bulk-head"><input type="checkbox" id="bulkToggle"> <span class="bi"><span class="ta">மொத்த விலை வீதம் (எ.கா. 10 கிலோ = ₹100)</span><span class="en">Bulk rate (e.g. 10 kg = ₹100)</span></span></label>
+      <div class="bulk-box" id="bulkBox" hidden>
+        <div class="row2">
+          <div>
+            <label class="lab bi" for="fldRefQty"><span class="ta">குறிப்பு அளவு</span><span class="en">Reference qty</span></label>
+            <div class="field"><input id="fldRefQty" inputmode="decimal" autocomplete="off" placeholder="பத்து / 10 / pathu"></div>
+            <div class="hint" id="hintRefQty"></div>
+          </div>
+          <div>
+            <label class="lab bi" for="fldRefAmount"><span class="ta">அந்த அளவின் விலை</span><span class="en">Price for that qty</span></label>
+            <div class="field"><input id="fldRefAmount" inputmode="decimal" autocomplete="off" placeholder="நூறு / 100 / nooru"></div>
+            <div class="hint" id="hintRefAmount"></div>
+          </div>
+        </div>
+        <p class="hint"><span class="bi"><span class="ta">10 கிலோ = ₹100 என்றால், 3 கிலோவுக்கு தானே ₹30 வரும்.</span><span class="en">10 kg = ₹100 → 3 kg becomes ₹30.</span></span></p>
+      </div>
+
+      <div id="vehicleWrap" hidden>
+        <label class="lab bi" for="fldVehicle"><span class="ta">வாகன எண்</span><span class="en">Vehicle number</span></label>
+        <div class="field"><input id="fldVehicle" autocomplete="off" placeholder="TN01AB1234 / MH01AB1234" maxlength="20" spellcheck="false"></div>
+      </div>
+
+      <label class="lab bi" id="noteLabel" for="fldNote"><span class="ta">குறிப்பு / காரணம்</span><span class="en">Note / reason</span></label>
+      <div class="field"><textarea id="fldNote" placeholder="சரிகட்டு, கழிவு, அல்லது வேறு விவரம் / Adjustment or other detail"></textarea></div>
+      <p class="note-req" id="noteReqMsg" hidden><span class="bi"><span class="ta">மைனஸ் / கழிவுத் தொகைக்கு இந்தக் குறிப்பு கட்டாயம்.</span><span class="en">A note is required for minus adjustments.</span></span></p>
+
+      </div>
+
+      <div class="sheet-foot">
+      <button type="button" class="more-btn" id="moreToggle" aria-expanded="false" aria-controls="moreFields">
+        <span class="bi" style="align-items:center"><span class="ta">மேலும்</span><span class="en">More — bulk rate, vehicle, adjustment</span></span>
+      </button>
+      <label class="lab bi"><span class="ta">பணம் செலுத்தும் முறை</span><span class="en">Payment mode</span></label>
+      <div class="chips" id="payChips">
+        <button type="button" class="pay-chip on" data-pay="cash"><span class="bi" style="align-items:center"><span class="ta">ரொக்கம்</span><span class="en">Cash</span></span></button>
+        <button type="button" class="pay-chip" data-pay="upi"><span class="bi" style="align-items:center"><span class="ta">UPI</span><span class="en">UPI</span></span></button>
+        <button type="button" class="pay-chip" data-pay="credit"><span class="bi" style="align-items:center"><span class="ta">கடன்</span><span class="en">Credit</span></span></button>
+      </div>
+      <div id="customerWrap">
+        <label class="lab bi" id="customerLabel" for="fldCustomer"><span class="ta">பெயர் (விருப்பம்)</span><span class="en">Name (optional)</span></label>
+        <input class="full" id="fldCustomer" autocomplete="off" placeholder="எ.கா. ரமேஷ் / Ramesh">
+      </div>
+      <div class="form-error" id="formError" role="alert"></div>
+      <button type="submit" class="save" id="saveBtn"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="modalBody">
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="ghost" id="cancelDelete"><span class="bi" style="align-items:center"><span class="ta">வேண்டாம்</span><span class="en">No, keep it</span></span></button>
+      <button type="button" class="danger" id="confirmDelete"><span class="bi" style="align-items:center"><span class="ta">ஆம், நீக்கு</span><span class="en">Yes, delete</span></span></button>
+    </div>
+  </div>
+
+  <div class="settings" id="settings" hidden role="dialog" aria-modal="true">
+    <div class="set-h">
+      <h3 class="bi"><span class="ta">அமைப்புகள்</span><span class="en">Settings</span></h3>
+      <button type="button" class="x" id="closeSettings" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
+    </div>
+    <h3 class="bi" style="margin:4px 0 6px;font-size:18px"><span class="ta">மொழி</span><span class="en">Language</span></h3>
+    <div class="lang-grid" id="setLangGrid">
+      <button type="button" data-setlang="ta"><span class="lg-n">தமிழ் / Tamil</span></button>
+      <button type="button" data-setlang="en"><span class="lg-n">English</span></button>
+      <button type="button" data-setlang="hi"><span class="lg-n">हिंदी / Hindi</span></button>
+      <button type="button" data-setlang="mr"><span class="lg-n">मराठी / Marathi</span></button>
+    </div>
+    <h3 class="bi" style="margin:14px 0 6px;font-size:18px"><span class="ta">குரல்</span><span class="en">Voice</span></h3>
+    <div class="lang-grid" id="voiceModeGrid">
+      <button type="button" data-voicemode="tap"><span class="bi" style="align-items:center"><span class="ta">தட்டி பேசு</span><span class="en">Tap to talk</span></span></button>
+      <button type="button" data-voicemode="hold"><span class="bi" style="align-items:center"><span class="ta">அழுத்திப் பிடித்து பேசு</span><span class="en">Hold to talk</span></span></button>
+    </div>
+    <label class="check-row"><input type="checkbox" id="setMicPulse"> <span class="bi"><span class="ta">பேசும்போது ஒலி அலை காட்டு (மைக்கைத் தனியாகத் திறக்காது)</span><span class="en">Show a sound pulse while listening (does not open the mic separately)</span></span></label>
+    <p class="help"><span class="bi"><span class="ta">கூட்டத்தில்: போனை வாய்க்கு அருகில் வைத்து, அழுத்திப் பிடித்து பேசுங்கள்.</span><span class="en">In a crowd: hold the phone close to your mouth and use Hold to talk.</span></span></p>
+    <label class="lab bi" for="setShopName"><span class="ta">கடையின் பெயர்</span><span class="en">Shop name</span></label>
+    <input class="full" id="setShopName" maxlength="80">
+    <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">மெனு விலைகள்</span><span class="en">Menu prices (editable)</span></h3>
+    <p class="help"><span class="bi"><span class="ta">விரைவு பொத்தான்களின் விலை இங்கே மாற்றலாம்.</span><span class="en">These prices are used when you tap a menu button. Making cost (for item profit) can also be set on the Shop → Margins tab.</span></span></p>
+    <div id="menuEditor"></div>
+    <button type="button" class="ghost" id="addMenuItem" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">+ மெனுப் பொருள்</span><span class="en">+ Menu item</span></span></button>
+    <button type="button" class="save" id="saveSettings" style="margin-top:12px"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save settings</span></span></button>
+    <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">காப்பு</span><span class="en">Backup</span></h3>
+    <p class="help"><span class="bi"><span class="ta">பதிவுகள் இந்தத் தொலைபேசியின் நினைவிலேயே இருக்கும். வேறு போனுக்கு மாற்றினாலோ, தரவை அழித்தாலோ காப்புக் கோப்பு தேவை.</span><span class="en">Entries stay on this phone. Export a backup before changing phones.</span></span></p>
+    <button type="button" class="ghost" id="btnExport" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">காப்புப் பதிவிறக்கம் (JSON)</span><span class="en">Download backup (JSON)</span></span></button>
+    <label class="ghost" style="display:block;text-align:center;padding:12px;margin:6px 0;border-radius:14px;font-weight:700">
+      <span class="bi" style="align-items:center"><span class="ta">காப்பை மீட்டெடு</span><span class="en">Restore backup</span></span>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </label>
+  </div>
+
+  <div class="lang-first" id="langFirst" hidden role="dialog" aria-modal="true" aria-labelledby="langFirstTitle">
+    <div class="lang-first-box">
+      <div class="lang-first-ico" aria-hidden="true">🗣️</div>
+      <h2 id="langFirstTitle">மொழி · Language · भाषा</h2>
+      <p class="help">Choose your language. You can change it later in Settings ⚙</p>
+      <div class="lang-grid big">
+        <button type="button" data-firstlang="ta"><span class="lg-n">தமிழ் / Tamil</span></button>
+        <button type="button" data-firstlang="en"><span class="lg-n">English</span></button>
+        <button type="button" data-firstlang="hi"><span class="lg-n">हिंदी / Hindi</span></button>
+        <button type="button" data-firstlang="mr"><span class="lg-n">मराठी / Marathi</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status">
+    <span id="toastMsg"></span>
+    <div class="toast-btns">
+      <button type="button" id="toastEdit" hidden><span class="bi" style="align-items:center"><span class="ta">திருத்து</span><span class="en">Edit</span></span></button>
+      <button type="button" id="toastUndo" hidden><span class="bi" style="align-items:center"><span class="ta">செயல்தவிர்</span><span class="en">Undo</span></span></button>
+    </div>
+  </div>
+
+  <!--I18N-->
+  <!--LOGIC-->
+  <!--APP-->
+</body>
+</html>
