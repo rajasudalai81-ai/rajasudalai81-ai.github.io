@@ -7,7 +7,7 @@
  *  - The cache name carries the build id; old caches are deleted on activate, so nothing stale lives forever.
  *  - No skipWaiting on install: the page shows "Update available — tap to refresh" and then sends SKIP_WAITING. */
 "use strict";
-const BUILD = "0384b22c";
+const BUILD = "bfb31aa1";
 const CACHE = "kadai-" + BUILD;
 const SCOPE = self.registration.scope;               // e.g. https://user.github.io/
 const INDEX = new URL("index.html", SCOPE).href;
