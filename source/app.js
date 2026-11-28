@@ -121,7 +121,7 @@
   const state = {
     date: L.todayISO(),
     entries: [],
-    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", micPulse: false, voiceFixV9: true, recipes: {}, autoStockSince: null, lastBackup: null, backupSnoozeUntil: null, pin: null },
+    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", micPulse: false, voiceFixV9: true, recipes: {}, autoStockSince: null, lastBackup: null, backupSnoozeUntil: null, pin: null, auditLog: [], deviceName: "", galla: {}, suppliers: [], supplierTx: [], combos: [] },
     pinUnlockedAt: 0,
     personFilter: "",
     pendingCalc: null,
@@ -188,12 +188,19 @@
       autoStockSince: parsed && parsed.autoStockSince,
       lastBackup: parsed && parsed.lastBackup,
       backupSnoozeUntil: parsed && parsed.backupSnoozeUntil,
-      pin: parsed && parsed.pin
+      pin: parsed && parsed.pin,
+      auditLog: parsed && parsed.auditLog,
+      deviceName: parsed && parsed.deviceName,
+      galla: parsed && parsed.galla,
+      suppliers: parsed && parsed.suppliers,
+      supplierTx: parsed && parsed.supplierTx,
+      combos: parsed && parsed.combos
     };
+    if (!parsed || !parsed.galla || !parsed.suppliers) state.settingsMigrated = true;
     if (parsed && !parsed.voiceFixV9) state.settingsMigrated = true;
     // v10: fill in recipes / auto-stock start day / backup fields / PIN (never touches entries)
     if (!parsed || !parsed.autoStockSince || !parsed.recipes) state.settingsMigrated = true;
-    state.settings = L.migrateV10(state.settings, state.entries, L.todayISO());
+    state.settings = L.migrateV11(L.migrateV10(state.settings, state.entries, L.todayISO()));
   }
 
   function normalizeVoiceLang(v, lang) {
@@ -271,7 +278,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  const UNDO_MS = 8000;
+  const UNDO_MS = 5000; // v11: undo window after a voice / quick save
 
   function toast(msg, opts) {
     opts = opts || {};
@@ -284,9 +291,12 @@
     if (editBtn) editBtn.hidden = !(opts.edit && state.lastSavedIds && state.lastSavedIds.length);
     el.classList.add("show");
     clearTimeout(toast._t);
+    el.classList.remove("undo-timer");
+    if (opts.undo) { void el.offsetWidth; el.classList.add("undo-timer"); } // thin countdown bar under the toast
     const ms = opts.ms || (opts.undo ? UNDO_MS : 2800);
     toast._t = setTimeout(() => {
       el.classList.remove("show");
+      el.classList.remove("undo-timer");
       if (opts.undo) {
         state.undoEntry = null;
         state.undoAction = null;
@@ -299,7 +309,7 @@
   function hideToast() {
     clearTimeout(toast._t);
     const el = document.getElementById("toast");
-    if (el) el.classList.remove("show");
+    if (el) { el.classList.remove("show"); el.classList.remove("undo-timer"); }
     const u = document.getElementById("toastUndo");
     if (u) u.hidden = true;
     const e = document.getElementById("toastEdit");
@@ -324,12 +334,21 @@
       if (action.wageIds && action.wageIds.length) {
         state.settings.wages = (state.settings.wages || []).filter((w) => action.wageIds.indexOf(w.id) === -1);
       }
+    } else if (action.kind === "multi") {
+      const led = ledger();
+      result = { ok: true };
+      for (const a of action.actions.slice().reverse()) {
+        const r = a.kind === "remove" ? led.remove(a.id) : led.edit(a.id, a.prev);
+        if (!r.ok) { result = r; break; }
+        result = r;
+      }
     } else if (action.kind === "remove") {
       result = ledger().remove(action.id);
     } else if (action.kind === "revert") {
       result = ledger().edit(action.id, action.prev);
     } else if (action.kind === "restore") {
       result = ledger().add(action.entry);
+      if (result.ok) audit("restore", null, action.entry);
     }
     if (!result || !result.ok) {
       toast(S("மீட்க முடியவில்லை", "Could not undo"));
@@ -407,6 +426,9 @@
     document.getElementById("panelSummary").hidden = state.tab !== "Summary";
     document.getElementById("panelShop").hidden = state.tab !== "Shop";
     renderStockAlert();
+    updateShopDot();
+    renderComboRow();
+    if (state.tab === "Summary") { renderGalla(); renderRoll(); }
     if (state.tab === "Shop") renderShop();
     document.querySelectorAll(".tabbar button").forEach((b) => {
       b.classList.toggle("on", b.getAttribute("data-tab") === state.tab);
@@ -738,7 +760,9 @@
       askDelete(id);
       return;
     }
-    applyLedger(ledger().edit(id, { qty, amount: L.roundMoney(qty * Number(entry.unitPrice)) }));
+    const res = ledger().edit(id, { qty, amount: L.roundMoney(qty * Number(entry.unitPrice)) });
+    if (res.ok && entry.date !== L.todayISO()) audit("edit", entry, res.entry);
+    applyLedger(res);
   }
 
   /* ---------- Voice (one-shot) ---------- */
@@ -1523,6 +1547,7 @@
       setMsg(errBox, S("பதிவைச் சேமிக்க முடியவில்லை.", "Could not save this entry."));
       return;
     }
+    if (isEdit) audit("edit", state.entries.find((e) => e.id === id), result.entry);
     applyLedger(result, savedToast());
     closeForm();
   }
@@ -1549,6 +1574,7 @@
     const result = ledger().remove(state.pendingDeleteId);
     closeModal();
     if (!result.ok) { toast(S("பதிவை நீக்க முடியவில்லை", "Could not delete")); return; }
+    if (removed) audit("delete", removed, null);
     const copy = removed ? { ...removed } : (result.removed ? { ...result.removed } : null);
     state.undoEntry = copy;
     state.undoAction = copy ? { kind: "restore", entry: copy } : null;
@@ -1569,9 +1595,12 @@
   function askMarkPaid(name) {
     if (gated("mark-paid", {}, () => askMarkPaid(name), "paid")) return;
     state.pendingPaidName = name;
+    state.paidVia = "cash";
     document.getElementById("modalBody").innerHTML =
       `<div class="modal-q"><strong>${escapeHtml(name)}</strong> — ${H("கடன் முழுவதும் செலுத்திவிட்டாரா?", "Mark all of this credit as paid?")}</div>` +
-      `<div class="modal-warn">${H("வரவு எண் மாறாது — கடன் மட்டும் முடியும்.", "Income total stays the same; the credit book is cleared.")}</div>`;
+      `<div class="modal-warn">${H("வரவு எண் மாறாது — கடன் மட்டும் முடியும்.", "Income total stays the same; the credit book is cleared.")}</div>` +
+      `<div class="help" style="margin-top:8px">${H("எப்படி வாங்கினீர்கள்?", "How was it received?")}</div>` +
+      `<div class="seg" id="paidViaSeg"><button type="button" class="on" data-paidvia="cash">${H("ரொக்கம்", "Cash")}</button><button type="button" data-paidvia="upi"><span class="bi" style="align-items:center"><span class="ta">UPI</span></span></button></div>`;
     const yes = document.getElementById("confirmDelete");
     yes.classList.remove("danger");
     yes.classList.add("ok");
@@ -1592,6 +1621,10 @@
     renderBackupSettings();
     document.getElementById("setShopName").value = shopTitle();
     renderMenuEditor();
+    document.getElementById("setDevice").value = state.settings.deviceName || "";
+    state.comboDraft = L.normalizeCombos(state.settings.combos, state.settings.menu).map((c) => ({ id: c.id, name: c.name || "", lines: c.lines.map((l) => ({ menuId: l.menuId, qty: l.qty })) }));
+    renderComboEditor();
+    document.getElementById("auditList").hidden = true;
     document.getElementById("settings").hidden = false;
     document.getElementById("backdrop").hidden = false;
   }
@@ -1642,10 +1675,12 @@
     document.getElementById("shopLock").hidden = !locked;
     document.getElementById("shopStock").hidden = section !== "stock";
     document.getElementById("shopRecipes").hidden = section !== "recipes";
+    document.getElementById("shopSuppliers").hidden = section !== "suppliers";
     document.getElementById("shopMargins").hidden = locked || section !== "margins";
     document.getElementById("shopStaff").hidden = locked || section !== "staff";
     if (section === "stock") renderStock();
     if (section === "recipes") renderRecipes();
+    if (section === "suppliers") renderSuppliers();
     if (section === "margins" && !locked) renderMargins();
     if (section === "staff" && !locked) renderStaff();
   }
@@ -1664,15 +1699,16 @@
           <div>
             <strong>${escapeHtml(stockName(s))}</strong>
             ${curLang() !== "en" && s.nameEn && s.nameEn !== stockName(s) ? '<div class="en">' + escapeHtml(s.nameEn) + "</div>" : ""}
-            <div class="help">${escapeHtml(S("குறைந்தபட்சம்", "Alert at"))} ${escapeHtml(String(s.minAlert))} ${escapeHtml(unitName(s.unit))}</div>
+            <div class="help">${escapeHtml(S("குறைந்தபட்சம்", "Alert at"))} ${escapeHtml(String(s.minAlert))} ${escapeHtml(unitName(s.unit))} <button type="button" class="linkish" data-minedit="${escapeHtml(s.id)}">✏️ ${escapeHtml(S("மாற்று", "Change"))}</button></div>
             ${Number(s.qty) < 0 ? `<div class="help" style="color:#9B1C1C;font-weight:700">${escapeHtml(S("இருப்பு குறைவாகப் பதிவானது — புதிய இருப்பைச் சேர்க்கவும்", "Sales used more than the counted stock — add your real stock"))}</div>` : ""}
           </div>
-          <div style="text-align:right">
-            <span class="badge ${Number(s.qty) < 0 ? "neg" : isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(unitName(s.unit))}</span>
+          <div style="text-align:right;align-self:center;white-space:nowrap">
+            ${isLow && Number(s.qty) >= 0 ? `<span class="badge low">${escapeHtml(S("குறைவு", "LOW"))}</span> ` : ""}<span class="badge ${Number(s.qty) < 0 ? "neg" : isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(unitName(s.unit))}</span>
           </div>
         </div>`;
       }).join("");
     }
+    renderWasteList();
     const alertBox = document.getElementById("stockAlertBox");
     if (low.length) {
       alertBox.innerHTML = escapeHtml(low.map((s) => stockName(s) + " " + s.qty + " " + unitName(s.unit)).join(", ")) + " — " + H("சரிபாருங்கள்", "Please check");
@@ -1689,6 +1725,8 @@
 
   function openStockMove(kind) {
     document.getElementById("stockNewForm").hidden = true;
+    document.getElementById("wasteForm").hidden = true;
+    document.getElementById("stockMinForm").hidden = true;
     const form = document.getElementById("stockMoveForm");
     form.hidden = false;
     document.getElementById("stockMoveKind").value = kind;
@@ -2051,7 +2089,7 @@
 
   function shareWhatsApp() {
     if (gated("share-summary", {}, shareWhatsApp, "share")) return;
-    const text = L.daySummaryTextLang(state.entries, state.date, shopTitle(), curLang());
+    const text = L.daySummaryTextLang(state.entries, state.date, shopTitle(), curLang(), { galla: gallaInfo(state.date) });
     const url = "https://wa.me/?text=" + encodeURIComponent(text);
     window.open(url, "_blank");
   }
@@ -2063,6 +2101,7 @@
     settings: ["அமைப்புகளைத் திறக்க", "open Settings"],
     restore: ["காப்பை மீட்டெடுக்க", "restore a backup"],
     stock: ["இருப்பை மாற்ற", "change stock"],
+    supplier: ["சப்ளையர் பதிவை நீக்க", "delete a supplier record"],
     recipe: ["செய்முறையை மாற்ற", "change a recipe"],
     profit: ["லாபம், கூலி பார்க்க", "see profit and wages"],
     edit: ["பழைய பதிவைத் திருத்த", "edit a past entry"],
@@ -2624,6 +2663,517 @@
     }).catch(() => { /* the app works without it */ });
   }
 
+  /* =====================================================================
+   * v11: audit log, galla check, supplier due book, wastage + min stock, 7/30-day summary, combo tiles
+   * ===================================================================== */
+  function audit(action, oldE, newE, extra) {
+    try {
+      const rec = L.makeAuditRecord(action, oldE, newE, Object.assign({ device: state.settings.deviceName }, extra || {}));
+      if (rec) state.settings.auditLog = L.addAudit(state.settings.auditLog, rec);
+    } catch (e) { /* the log must never block saving */ }
+  }
+  const AUDIT_FIELD_LABEL = {
+    type: ["வகை", "Type"], date: ["தேதி", "Date"], item: ["பொருள்", "Item"], qty: ["அளவு", "Qty"], unit: ["அலகு", "Unit"],
+    unitPrice: ["ஒரு விலை", "Unit price"], amount: ["தொகை", "Amount"], payMode: ["பணம் முறை", "Payment"], customerName: ["பெயர்", "Name"], note: ["குறிப்பு", "Note"]
+  };
+  function auditVal(k, v) {
+    if (v === "" || v == null) return "—";
+    if (k === "amount" || k === "unitPrice") return formatMoney(v);
+    if (k === "type") return v === "income" ? P("வரவு", "In") : P("செலவு", "Ex");
+    if (k === "payMode") return (PAY_LABEL[v] ? P(PAY_LABEL[v].ta, PAY_LABEL[v].en) : String(v));
+    if (k === "item") return itemName(v);
+    if (k === "unit") return unitName(v);
+    return String(v);
+  }
+  function renderAudit() {
+    const box = document.getElementById("auditList");
+    const log = state.settings.auditLog || [];
+    if (!log.length) {
+      box.innerHTML = "<p class='help'>" + H("இன்னும் திருத்தம் / நீக்கம் இல்லை.", "No edits or deletes yet.") + "</p>";
+      return;
+    }
+    box.innerHTML = log.slice(0, 100).map((r) => {
+      const what = r.action === "delete" ? `<span class="audit-del">🗑 ${H("நீக்கப்பட்டது", "Deleted")}</span>`
+        : r.action === "restore" ? `<span class="audit-edit">↩ ${H("மீட்கப்பட்டது", "Restored")}</span>`
+        : r.action === "paid" ? `<span class="audit-edit">✔ ${H("கடன் முடிந்தது", "Credit marked paid")}</span>`
+        : `<span class="audit-edit">✏️ ${H("திருத்தப்பட்டது", "Edited")}</span>`;
+      let detail = "";
+      if (r.action === "edit") {
+        detail = (r.changed || []).map((k) => `${escapeHtml(S(AUDIT_FIELD_LABEL[k][0], AUDIT_FIELD_LABEL[k][1]))}: ${escapeHtml(auditVal(k, r.old[k]))} → <strong>${escapeHtml(auditVal(k, r.new[k]))}</strong>`).join("<br>");
+      } else if (r.action === "delete" || r.action === "restore") {
+        const o = r.action === "delete" ? r.old : r.new;
+        detail = escapeHtml([o.amount != null ? formatMoney(o.amount) : "", o.qty != null ? o.qty + " " + unitName(o.unit || "") : "", o.customerName ? "👤 " + o.customerName : ""].filter(Boolean).join(" · "));
+      } else if (r.action === "paid") {
+        detail = escapeHtml((r.old && r.old.amount != null ? formatMoney(r.old.amount) : "") + (r.old && r.old.count ? " · " + r.old.count + " " + S("பதிவு", "entries") : "") + (r.new && r.new.via ? " · " + r.new.via : ""));
+      }
+      return `<div class="audit-row">${what} <strong>${escapeHtml(r.action === "paid" ? r.item : (itemName(r.item) || "—"))}</strong> <span class="who">${escapeHtml(r.date || "")}</span>
+        <div>${detail}</div>
+        <div class="who">🕒 ${escapeHtml(fmtDateTime(r.at))}${r.by ? " · 📱 " + escapeHtml(r.by) : ""}</div></div>`;
+    }).join("");
+  }
+
+  /* ---------- Galla (cash box) ---------- */
+  function gallaInfo(date) {
+    const rec = L.gallaGet(state.settings.galla, date);
+    const fig = L.gallaFigures(state.entries, date, { opening: rec.opening, supplierTx: state.settings.supplierTx });
+    return Object.assign({}, fig, { opening: rec.opening, actual: rec.actual });
+  }
+  function setIfIdle(id, val) {
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.value = val == null ? "" : String(val);
+  }
+  function renderGalla() {
+    const d = state.date;
+    const g = gallaInfo(d);
+    document.getElementById("gallaDate").textContent = formatDateTa(d);
+    setIfIdle("gallaOpening", g.opening);
+    setIfIdle("gallaActual", g.actual);
+    const carry = document.getElementById("gallaCarry");
+    const prev = L.gallaGet(state.settings.galla, L.addDaysISO ? L.addDaysISO(d, -1) : d);
+    if (g.opening == null && prev.actual != null) {
+      carry.hidden = false;
+      carry.innerHTML = `${H("நேற்றைய இறுதிப் பணம்", "Yesterday's closing cash")}: <strong>${escapeHtml(formatMoney(prev.actual))}</strong> <button type="button" class="linkish" id="gallaUsePrev" data-v="${escapeHtml(String(prev.actual))}">${H("இதையே பயன்படுத்து", "Use it")}</button>`;
+    } else { carry.hidden = true; carry.innerHTML = ""; }
+    const line = (ta, en, val, cls) => `<div class="galla-line ${cls || ""}"><span>${TL(ta, en)}</span><span>${escapeHtml(val)}</span></div>`;
+    let html = line("தொடக்கப் பணம்", "Opening", formatMoney(g.opening || 0)) +
+      line("+ ரொக்க விற்பனை", "+ Cash sales", formatMoney(g.cashSales)) +
+      (g.kadanCash ? line("+ ரொக்கமாகத் திரும்பிய கடன்", "+ Credit repaid in cash", formatMoney(g.kadanCash)) : "") +
+      line("− ரொக்கச் செலவு", "− Cash expenses", formatMoney(g.cashExpenses)) +
+      (g.supplierCash ? line("− சப்ளையர் ரொக்கக் கொடுப்பனவு", "− Supplier paid in cash", formatMoney(g.supplierCash)) : "") +
+      line("= இருக்க வேண்டிய ரொக்கம்", "= Expected cash", formatMoney(g.expected), "tot");
+    document.getElementById("gallaBreakdown").innerHTML = html;
+    const df = L.gallaDifference(g.expected, g.actual);
+    const res = document.getElementById("gallaResult");
+    if (df.status === "none") res.innerHTML = "";
+    else if (df.status === "even") res.innerHTML = `<div class="galla-res even">✅ ${H("கல்லா சரியாக உள்ளது", "Cash box matches")}</div>`;
+    else res.innerHTML = `<div class="galla-res ${df.status}">${df.status === "short" ? "⚠️ " + H("குறைவு", "Short") : "ℹ️ " + H("கூடுதல்", "Extra")}<span class="big">${escapeHtml(formatMoney(Math.abs(df.diff)))}</span></div>`;
+  }
+  function saveGalla(field) {
+    const id = field === "opening" ? "gallaOpening" : "gallaActual";
+    const raw = document.getElementById(id).value.trim();
+    let v = null;
+    if (raw !== "") {
+      v = L.parseTamilNumber(raw);
+      if (!(v >= 0)) v = Number(raw.replace(",", "."));
+      if (!(v >= 0)) { toast(S("தொகை சரியாக இல்லை", "That amount is not valid")); return; }
+    }
+    withPin("add-entry", { date: state.date }, () => {
+      state.settings.galla = L.gallaSet(state.settings.galla, state.date, field === "opening" ? { opening: v } : { actual: v });
+      saveStore();
+      render();
+      toast(S("சேமிக்கப்பட்டது ✓", "Saved ✓"));
+    }, "addPast");
+  }
+
+  /* ---------- 7 / 30 day summary ---------- */
+  function renderRoll() {
+    const days = state.rollDays || 7;
+    document.querySelectorAll("#rollSeg [data-roll]").forEach((b) => b.classList.toggle("on", Number(b.getAttribute("data-roll")) === days));
+    const r = L.rollingSummary(state.entries, state.date, days);
+    const maxInc = Math.max(1, ...r.perDay.map((x) => x.income));
+    const bars = r.perDay.map((x) => `<i title="${escapeHtml(x.date)}" style="height:${Math.max(2, Math.round(56 * x.income / maxInc))}px"></i>`).join("");
+    const top = r.top.length
+      ? "<ol style='margin:6px 0 0;padding-left:20px'>" + r.top.map((x) => `<li><strong>${escapeHtml(itemName(x.item))}</strong> — ${formatMoney(x.amount)}${x.qty ? " (" + x.qty + ")" : ""}</li>`).join("") + "</ol>"
+      : "<p class='help'>" + H("இந்தக் காலத்தில் வரவுப் பதிவு இல்லை.", "No sales in this period.") + "</p>";
+    document.getElementById("rollBody").innerHTML =
+      `<div class="help">${escapeHtml(r.from)} – ${escapeHtml(r.to)}</div>
+       <div class="roll-stats">
+         <div><div class="k">${TL("மொத்த விற்பனை", "Total sales")}</div><div class="v">${formatMoney(r.income)}</div></div>
+         <div><div class="k">${TL("மொத்த செலவு", "Total expenses")}</div><div class="v">${formatMoney(r.expense)}</div></div>
+         <div><div class="k">${TL("நிகர லாபம்", "Net profit")}</div><div class="v">${profitText(r.profit)}</div></div>
+       </div>
+       <div class="roll-bars" aria-hidden="true">${bars}</div>
+       <div class="help">${TL("தினசரி விற்பனை", "Daily sales")}</div>` +
+      (r.wasteCost > 0 && !profitHidden() ? `<div class="help">🗑 ${TL("இதில் வீணான இழப்பு", "of which wastage")}: ${escapeHtml(formatMoney(r.wasteCost))}</div>` : "") +
+      `<h3 style="margin:10px 0 0;font-size:16px">${H("அதிகம் விற்றவை", "Top-selling items")}</h3>` + top;
+  }
+
+  /* ---------- Combo tiles ---------- */
+  function comboName(c) {
+    if (c.name) return c.name;
+    return c.lines.map((l) => {
+      const m = (state.settings.menu || []).find((x) => x.id === l.menuId);
+      return (l.qty > 1 ? l.qty + " " : "") + (m ? menuName(m) : "?");
+    }).join(" + ");
+  }
+  function renderComboRow() {
+    const box = document.getElementById("comboRow");
+    const combos = L.normalizeCombos(state.settings.combos, state.settings.menu);
+    if (!combos.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = combos.map((c) => `<button type="button" class="combo-btn" data-combo="${escapeHtml(c.id)}"><span class="cn">${escapeHtml(comboName(c))}</span><span class="cp">${escapeHtml(formatMoney(L.comboTotal(c, state.settings.menu)))}</span></button>`).join("");
+  }
+  function addCombo(id) {
+    const c = L.normalizeCombos(state.settings.combos, state.settings.menu).find((x) => x.id === id);
+    if (!c) return;
+    if (gated("add-entry", { date: state.date }, () => addCombo(id), "addPast")) return;
+    const led = ledger();
+    const actions = [];
+    const ids = [];
+    for (const line of c.lines) {
+      const m = (state.settings.menu || []).find((x) => x.id === line.menuId);
+      if (!m || !Number(m.price)) continue;
+      const price = Number(m.price);
+      const name = m.nameTa || m.nameEn;
+      const existing = led.all().find((e) =>
+        e.date === state.date && e.type === "income" && e.item === name && e.unitPrice === price &&
+        L.payModeOf(e) === "cash" && !e.creditPaid && Number(e.amount) >= 0);
+      if (existing) {
+        const prev = { qty: existing.qty, amount: existing.amount, unitPrice: existing.unitPrice, unit: existing.unit };
+        const qty = (existing.qty || 1) + line.qty;
+        const res = led.edit(existing.id, { qty, amount: L.roundMoney(qty * price), unitPrice: price, unit: m.unit });
+        if (res.ok) { actions.push({ kind: "revert", id: existing.id, prev }); ids.push(existing.id); }
+      } else {
+        const res = led.add({ type: "income", date: state.date, item: name, qty: line.qty, unit: m.unit || "எண்ணிக்கை", unitPrice: price, amount: L.roundMoney(line.qty * price), payMode: "cash" });
+        if (res.ok) { actions.push({ kind: "remove", id: res.entry.id }); ids.push(res.entry.id); }
+      }
+    }
+    if (!actions.length) { toast(S("முதலில் விலையை அமைப்புகளில் போடவும்", "Set a price in Settings first")); return; }
+    state.entries = led.all();
+    state.undoEntry = null;
+    state.undoAction = { kind: "multi", actions };
+    state.lastSavedIds = ids;
+    saveStore();
+    render();
+    toast(savedToast(comboName(c)), { undo: true, edit: true });
+  }
+  function comboDraftFromDom() {
+    const out = [];
+    document.querySelectorAll("#comboEditor .combo-edit").forEach((box) => {
+      const lines = [];
+      box.querySelectorAll(".cl-row").forEach((row) => {
+        lines.push({ menuId: row.querySelector('[data-k="menu"]').value, qty: Number(row.querySelector('[data-k="qty"]').value) || 1 });
+      });
+      out.push({ id: box.getAttribute("data-id"), name: box.querySelector(".cname").value.trim(), lines });
+    });
+    return out;
+  }
+  function renderComboEditor() {
+    const menu = state.settings.menu || [];
+    const draft = state.comboDraft || [];
+    const box = document.getElementById("comboEditor");
+    box.innerHTML = draft.map((c, i) => `<div class="combo-edit" data-id="${escapeHtml(c.id)}" data-i="${i}">
+      <input class="cname" value="${escapeHtml(c.name || "")}" placeholder="${escapeHtml(S("பெயர் (காலியாக விட்டால் தானாக)", "Name (auto if empty)"))}" aria-label="${escapeHtml(S("காம்போ பெயர்", "Combo name"))}">
+      ${c.lines.map((l, j) => `<div class="cl-row" data-j="${j}">
+        <select data-k="menu">${menu.map((m) => `<option value="${escapeHtml(m.id)}"${m.id === l.menuId ? " selected" : ""}>${escapeHtml(menuName(m))}</option>`).join("")}</select>
+        <input data-k="qty" inputmode="numeric" value="${escapeHtml(String(l.qty || 1))}" aria-label="${escapeHtml(S("எண்ணிக்கை", "Count"))}">
+        <button type="button" class="btn-del" data-clrm="${i}:${j}" aria-label="${escapeHtml(S("நீக்கு", "Remove"))}">🗑️</button>
+      </div>`).join("")}
+      <div class="modal-actions">
+        <button type="button" class="ghost" data-cladd="${i}">${H("+ பொருள்", "+ Item")}</button>
+        <button type="button" class="ghost" style="color:#9B1C1C;font-weight:700" data-cldel="${i}">${H("காம்போவை நீக்கு", "Remove combo")}</button>
+      </div></div>`).join("");
+    document.getElementById("addCombo").hidden = draft.length >= L.COMBO_MAX;
+  }
+  function bindCombos() {
+    document.getElementById("comboRow").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-combo]");
+      if (b) addCombo(b.getAttribute("data-combo"));
+    });
+    document.getElementById("addCombo").addEventListener("click", () => {
+      state.comboDraft = comboDraftFromDom();
+      const first = (state.settings.menu || [])[0];
+      if (!first || state.comboDraft.length >= L.COMBO_MAX) return;
+      state.comboDraft.push({ id: "combo-" + Date.now(), name: "", lines: [{ menuId: first.id, qty: 1 }] });
+      renderComboEditor();
+    });
+    document.getElementById("comboEditor").addEventListener("click", (e) => {
+      const add = e.target.closest("[data-cladd]");
+      const del = e.target.closest("[data-cldel]");
+      const rm = e.target.closest("[data-clrm]");
+      if (!add && !del && !rm) return;
+      state.comboDraft = comboDraftFromDom();
+      if (add) {
+        const i = Number(add.getAttribute("data-cladd"));
+        const first = (state.settings.menu || [])[0];
+        if (first && state.comboDraft[i]) state.comboDraft[i].lines.push({ menuId: first.id, qty: 1 });
+      } else if (del) {
+        state.comboDraft.splice(Number(del.getAttribute("data-cldel")), 1);
+      } else {
+        const [i, j] = rm.getAttribute("data-clrm").split(":").map(Number);
+        if (state.comboDraft[i]) { state.comboDraft[i].lines.splice(j, 1); if (!state.comboDraft[i].lines.length) state.comboDraft.splice(i, 1); }
+      }
+      renderComboEditor();
+    });
+  }
+
+  /* ---------- Supplier due book ---------- */
+  function renderSuppliers() {
+    const bal = L.supplierBalances(state.settings.suppliers, state.settings.supplierTx);
+    const total = L.supplierTotalDue(state.settings.suppliers, state.settings.supplierTx);
+    document.getElementById("supTotal").innerHTML = bal.length
+      ? `<div class="galla-line tot"><span>${TL("மொத்தப் பாக்கி", "Total due")}</span><span style="color:#9B1C1C">${escapeHtml(formatMoney(total))}</span></div>` : "";
+    document.getElementById("supList").innerHTML = bal.length ? bal.map((b) => `<button type="button" class="sup-item" data-sup="${escapeHtml(b.id)}">
+        <span><strong>${escapeHtml(b.name)}</strong>${b.phone ? `<span class="help" style="display:block">📞 ${escapeHtml(b.phone)}</span>` : ""}${b.last ? `<span class="help" style="display:block">${escapeHtml(S("கடைசி", "Last"))}: ${escapeHtml(b.last)}</span>` : ""}</span>
+        <span class="bal${b.balance <= 0 ? " ok" : ""}">${escapeHtml(formatMoney(b.balance))}${b.balance < 0 ? `<span class="help" style="display:block">${escapeHtml(S("முன்பணம்", "Advance"))}</span>` : ""}</span></button>`).join("")
+      : "<p class='help'>" + H("இன்னும் சப்ளையர் இல்லை.", "No suppliers yet.") + "</p>";
+    renderSupDetail();
+  }
+  function renderSupDetail() {
+    const card = document.getElementById("supDetail");
+    const sid = state.supSel;
+    const sup = (state.settings.suppliers || []).find((s) => s.id === sid);
+    if (!sup) { card.hidden = true; return; }
+    card.hidden = false;
+    const b = L.supplierBalances(state.settings.suppliers, state.settings.supplierTx).find((x) => x.id === sid);
+    document.getElementById("supDetailHead").innerHTML = `<h2 class="sec" style="margin-top:0">${escapeHtml(sup.name)}</h2>
+      <div class="galla-line"><span>${TL("பில்கள்", "Bills")}</span><span>${escapeHtml(formatMoney(b.bills))}</span></div>
+      <div class="galla-line"><span>${TL("கொடுத்தது", "Paid")}</span><span>${escapeHtml(formatMoney(b.paid))}</span></div>
+      <div class="galla-line tot"><span>${TL("பாக்கி", "Balance")}</span><span>${escapeHtml(formatMoney(b.balance))}</span></div>`;
+    const tx = (state.settings.supplierTx || []).filter((t) => t.supplierId === sid).slice().sort((a, c) => String(c.date).localeCompare(String(a.date)) || String(c.createdAt).localeCompare(String(a.createdAt)));
+    document.getElementById("supTxList").innerHTML = tx.length ? tx.map((t) => {
+      const linked = t.entryId && state.entries.some((e) => e.id === t.entryId);
+      return `<div class="tx-row"><div><span class="${t.type === "bill" ? "tx-bill" : "tx-pay"}">${t.type === "bill" ? "🧾 " + escapeHtml(S("பில்", "Bill")) : "💸 " + escapeHtml(S("கொடுத்தது", "Paid")) + " (" + escapeHtml(t.method) + ")"} ${escapeHtml(formatMoney(t.amount))}</span>
+        <div class="help">${escapeHtml(t.date)}${t.note ? " · " + escapeHtml(t.note) : ""}${linked ? " · " + escapeHtml(S("செலவில் சேர்ந்தது", "in expenses")) : ""}</div></div>
+        <button type="button" class="btn-del" data-suptxdel="${escapeHtml(t.id)}" aria-label="${escapeHtml(S("நீக்கு", "Delete"))}">🗑️</button></div>`;
+    }).join("") : "<p class='help'>" + H("இன்னும் பதிவு இல்லை.", "Nothing recorded yet.") + "</p>";
+    const mSel = document.getElementById("supTxMethod");
+    const keep = mSel.value;
+    mSel.innerHTML = [["cash", P("ரொக்கம்", "Cash")], ["upi", "UPI"], ["bank", P("வங்கி", "Bank")]].map((o) => `<option value="${o[0]}">${escapeHtml(o[1])}</option>`).join("");
+    mSel.value = keep || "cash";
+  }
+  function openSupTx(type) {
+    document.getElementById("supTxType").value = type;
+    document.getElementById("supTxTitle").innerHTML = type === "bill" ? H("புதிய பில் (நீங்கள் கொடுக்க வேண்டியது)", "New bill (you owe this)") : H("சப்ளையருக்குக் கொடுத்தது", "Payment to supplier");
+    document.getElementById("supPayOpts").hidden = type !== "payment";
+    document.getElementById("supAsExpense").checked = false;
+    document.getElementById("supTxAmount").value = "";
+    document.getElementById("supTxNote").value = "";
+    document.getElementById("supTxDate").value = L.todayISO();
+    document.getElementById("supTxError").textContent = "";
+    document.getElementById("supTxForm").hidden = false;
+    document.getElementById("supTxAmount").focus();
+  }
+  function submitSupTx() {
+    const type = document.getElementById("supTxType").value;
+    const raw = document.getElementById("supTxAmount").value.trim();
+    let amount = L.parseTamilNumber(raw);
+    if (!(amount > 0)) amount = Number(raw.replace(",", "."));
+    const err = document.getElementById("supTxError");
+    err.textContent = "";
+    if (!(amount > 0)) { setMsg(err, S("தொகையைப் போடவும்", "Enter the amount")); return; }
+    const sup = (state.settings.suppliers || []).find((s) => s.id === state.supSel);
+    if (!sup) return;
+    const method = document.getElementById("supTxMethod").value;
+    const asExpense = type === "payment" && document.getElementById("supAsExpense").checked;
+    const input = { supplierId: sup.id, type, amount, date: L.normalizeDate(document.getElementById("supTxDate").value || L.todayISO()), note: document.getElementById("supTxNote").value, method: type === "payment" ? method : "" };
+    if (asExpense) input.entryId = "sx-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+    const res = L.addSupplierTx(state.settings.supplierTx, input);
+    if (!res.ok) { setMsg(err, S("சேமிக்க முடியவில்லை", "Could not save")); return; }
+    if (asExpense) {
+      const led = ledger().add(L.supplierPaymentExpense(sup, res.rec, S("சப்ளையர் கொடுப்பனவு", "Supplier payment")));
+      if (!led.ok) { setMsg(err, S("செலவு சேரவில்லை", "Could not log expense")); return; }
+      state.entries = led.entries;
+    }
+    state.settings.supplierTx = res.tx;
+    saveStore();
+    document.getElementById("supTxForm").hidden = true;
+    render();
+    toast(S("சேமிக்கப்பட்டது ✓", "Saved ✓"));
+  }
+  function deleteSupTx(id) {
+    withPin("stock", {}, () => {
+      const r = L.removeSupplierTx(state.settings.supplierTx, id);
+      if (!r.ok) return;
+      state.settings.supplierTx = r.tx;
+      if (r.rec.entryId) {
+        const ent = state.entries.find((e) => e.id === r.rec.entryId);
+        if (ent) { audit("delete", ent, null); state.entries = ledger().remove(ent.id).entries; }
+      }
+      saveStore();
+      render();
+      toast(S("அழிக்கப்பட்டது", "Deleted"));
+    }, "supplier");
+  }
+  function bindSuppliers() {
+    document.getElementById("btnSupNew").addEventListener("click", () => {
+      document.getElementById("supNewForm").hidden = false;
+      document.getElementById("supName").value = "";
+      document.getElementById("supPhone").value = "";
+      document.getElementById("supNewError").textContent = "";
+      document.getElementById("supName").focus();
+    });
+    document.getElementById("supNewCancel").addEventListener("click", () => { document.getElementById("supNewForm").hidden = true; });
+    document.getElementById("supNewForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const res = L.addSupplier(state.settings.suppliers, { name: document.getElementById("supName").value, phone: document.getElementById("supPhone").value });
+      if (!res.ok) { setMsg(document.getElementById("supNewError"), S("பெயரைப் போடவும்", "Enter a name")); return; }
+      state.settings.suppliers = res.suppliers;
+      state.supSel = res.supplier.id;
+      saveStore();
+      document.getElementById("supNewForm").hidden = true;
+      render();
+    });
+    document.getElementById("supList").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-sup]");
+      if (!b) return;
+      state.supSel = b.getAttribute("data-sup");
+      document.getElementById("supTxForm").hidden = true;
+      renderSupDetail();
+      document.getElementById("supDetail").scrollIntoView({ block: "start" });
+    });
+    document.getElementById("btnSupBill").addEventListener("click", () => openSupTx("bill"));
+    document.getElementById("btnSupPay").addEventListener("click", () => openSupTx("payment"));
+    document.getElementById("supTxCancel").addEventListener("click", () => { document.getElementById("supTxForm").hidden = true; });
+    document.getElementById("supTxForm").addEventListener("submit", (e) => { e.preventDefault(); submitSupTx(); });
+    document.getElementById("supClose").addEventListener("click", () => { state.supSel = null; renderSupDetail(); });
+    document.getElementById("supTxList").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-suptxdel]");
+      if (b) deleteSupTx(b.getAttribute("data-suptxdel"));
+    });
+    document.getElementById("supRemove").addEventListener("click", () => {
+      const id = state.supSel;
+      withPin("stock", {}, () => {
+        const r = L.removeSupplier(state.settings.suppliers, state.settings.supplierTx, id);
+        if (!r.ok) return;
+        state.settings.suppliers = r.suppliers;
+        state.settings.supplierTx = r.tx;
+        state.supSel = null;
+        saveStore();
+        render();
+        toast(S("அழிக்கப்பட்டது", "Deleted"));
+      }, "supplier");
+    });
+  }
+
+  /* ---------- Wastage + min stock ---------- */
+  const WASTE_REASONS = { spoiled: ["கெட்டுப்போனது", "Spoiled"], leftover: ["மீதம் / வீசியது", "Leftover"], spilled: ["சிந்தியது", "Spilled"], other: ["மற்றது", "Other"] };
+  function wasteReasonLabel(k) { const r = WASTE_REASONS[k] || WASTE_REASONS.other; return P(r[0], r[1]); }
+  function openWaste() {
+    document.getElementById("stockMoveForm").hidden = true;
+    document.getElementById("stockNewForm").hidden = true;
+    document.getElementById("stockMinForm").hidden = true;
+    document.getElementById("wasteForm").hidden = false;
+    const items = state.settings.stock || [];
+    document.getElementById("wasteItemSel").innerHTML = items.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(stockName(s))}</option>`).join("");
+    document.getElementById("wasteReason").innerHTML = Object.keys(WASTE_REASONS).map((k) => `<option value="${k}">${escapeHtml(wasteReasonLabel(k))}</option>`).join("");
+    document.getElementById("wasteQty").value = "";
+    document.getElementById("wasteCost").value = "";
+    document.getElementById("wasteCost").dataset.touched = "";
+    document.getElementById("wasteError").textContent = "";
+    document.getElementById("wasteQty").focus();
+  }
+  function suggestWasteCost() {
+    const cost = document.getElementById("wasteCost");
+    if (cost.dataset.touched) return;
+    const unit = L.estimateUnitCost(state.settings.stockMoves, document.getElementById("wasteItemSel").value);
+    const q = L.parseTamilNumber(document.getElementById("wasteQty").value);
+    cost.value = unit != null && q > 0 ? String(L.roundMoney(unit * q)) : "";
+  }
+  function submitWaste() {
+    const err = document.getElementById("wasteError");
+    err.textContent = "";
+    const qty = L.parseTamilNumber(document.getElementById("wasteQty").value);
+    if (!(qty > 0)) { setMsg(err, S("அளவைப் போடவும்", "Enter a quantity")); return; }
+    const costRaw = document.getElementById("wasteCost").value.trim();
+    const cost = costRaw ? (L.parseTamilNumber(costRaw) || Number(costRaw.replace(",", "."))) : 0;
+    const res = L.wasteStock(state.settings.stock, state.settings.stockMoves, {
+      itemId: document.getElementById("wasteItemSel").value, qty, date: state.date,
+      reason: document.getElementById("wasteReason").value, cost, label: P("வீணானது", "Wastage")
+    });
+    if (!res.ok) { setMsg(err, S("சேமிக்க முடியவில்லை", "Could not save")); return; }
+    state.settings.stock = res.stock;
+    state.settings.stockMoves = res.stockMoves;
+    if (res.expense) {
+      const led = ledger().add(res.expense);
+      if (!led.ok) { setMsg(err, S("செலவு சேரவில்லை", "Could not log expense")); return; }
+      state.entries = led.entries;
+    }
+    saveStore();
+    document.getElementById("wasteForm").hidden = true;
+    render();
+    toast(S("வீணானது பதிவானது ✓", "Wastage recorded ✓"));
+  }
+  function renderWasteList() {
+    const list = L.wasteMoves(state.settings.stockMoves).slice(0, 5);
+    const wrap = document.getElementById("wasteListWrap");
+    wrap.hidden = !list.length;
+    document.getElementById("wasteList").innerHTML = list.map((m) => {
+      const s = (state.settings.stock || []).find((x) => x.id === m.itemId);
+      return `<div class="tx-row"><div><strong>${escapeHtml(s ? stockName(s) : "?")}</strong> −${escapeHtml(String(m.qty))} ${escapeHtml(s ? unitName(s.unit) : "")}
+        <div class="help">${escapeHtml(m.date)} · ${escapeHtml(wasteReasonLabel(m.reason))}${m.cost ? " · " + escapeHtml(formatMoney(m.cost)) : ""}</div></div>
+        <button type="button" class="btn-del" data-wastedel="${escapeHtml(m.id)}" aria-label="${escapeHtml(S("நீக்கு", "Delete"))}">🗑️</button></div>`;
+    }).join("");
+  }
+  function deleteWaste(id) {
+    withPin("stock", {}, () => {
+      const r = L.removeWasteMove(state.settings.stock, state.settings.stockMoves, id);
+      if (!r.ok) return;
+      state.settings.stock = r.stock;
+      state.settings.stockMoves = r.stockMoves;
+      if (r.move.wasteEntryId) {
+        const ent = state.entries.find((e) => e.id === r.move.wasteEntryId);
+        if (ent) { audit("delete", ent, null); state.entries = ledger().remove(ent.id).entries; }
+      }
+      saveStore();
+      render();
+      toast(S("அழிக்கப்பட்டது", "Deleted"));
+    }, "stock");
+  }
+  function openStockMin(id) {
+    const s = (state.settings.stock || []).find((x) => x.id === id);
+    if (!s) return;
+    state.minEditId = id;
+    document.getElementById("wasteForm").hidden = true;
+    document.getElementById("stockMoveForm").hidden = true;
+    document.getElementById("stockNewForm").hidden = true;
+    document.getElementById("stockMinTitle").textContent = stockName(s) + " (" + unitName(s.unit) + ")";
+    document.getElementById("stockMinVal").value = String(s.minAlert);
+    document.getElementById("stockMinForm").hidden = false;
+    document.getElementById("stockMinVal").focus();
+  }
+  function bindStockV11() {
+    document.getElementById("btnWaste").addEventListener("click", () => withPin("stock", {}, openWaste, "stock"));
+    document.getElementById("wasteCancel").addEventListener("click", () => { document.getElementById("wasteForm").hidden = true; });
+    document.getElementById("wasteForm").addEventListener("submit", (e) => { e.preventDefault(); withPin("stock", {}, submitWaste, "stock"); });
+    document.getElementById("wasteItemSel").addEventListener("change", () => { document.getElementById("wasteCost").dataset.touched = ""; suggestWasteCost(); });
+    document.getElementById("wasteQty").addEventListener("input", suggestWasteCost);
+    document.getElementById("wasteCost").addEventListener("input", (e) => { e.target.dataset.touched = "1"; });
+    document.getElementById("wasteList").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-wastedel]");
+      if (b) deleteWaste(b.getAttribute("data-wastedel"));
+    });
+    document.getElementById("stockList").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-minedit]");
+      if (b) withPin("stock", {}, () => openStockMin(b.getAttribute("data-minedit")), "stock");
+    });
+    document.getElementById("stockMinCancel").addEventListener("click", () => { document.getElementById("stockMinForm").hidden = true; });
+    document.getElementById("stockMinForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const v = L.parseTamilNumber(document.getElementById("stockMinVal").value);
+      const val = Number.isNaN(v) || v == null ? Number(document.getElementById("stockMinVal").value) : v;
+      const r = L.setMinAlert(state.settings.stock, state.minEditId, val);
+      if (!r.ok) { toast(S("அளவு சரியாக இல்லை", "That quantity is not valid")); return; }
+      state.settings.stock = r.stock;
+      saveStore();
+      document.getElementById("stockMinForm").hidden = true;
+      render();
+      toast(S("சேமிக்கப்பட்டது ✓", "Saved ✓"));
+    });
+  }
+  function updateShopDot() {
+    const low = L.lowStockItems(state.settings.stock, state.settings.stockMoves);
+    const nav = document.getElementById("navShop");
+    if (nav) nav.classList.toggle("has-low", low.length > 0);
+  }
+  function bindV11() {
+    bindCombos();
+    bindSuppliers();
+    bindStockV11();
+    document.getElementById("gallaOpeningSave").addEventListener("click", () => saveGalla("opening"));
+    document.getElementById("gallaActualSave").addEventListener("click", () => saveGalla("actual"));
+    document.getElementById("gallaCard").addEventListener("click", (e) => {
+      const b = e.target.closest("#gallaUsePrev");
+      if (b) { document.getElementById("gallaOpening").value = b.getAttribute("data-v"); saveGalla("opening"); }
+    });
+    document.querySelectorAll("#rollSeg [data-roll]").forEach((b) => b.addEventListener("click", () => { state.rollDays = Number(b.getAttribute("data-roll")); renderRoll(); }));
+    document.getElementById("btnAudit").addEventListener("click", () => {
+      const box = document.getElementById("auditList");
+      box.hidden = !box.hidden;
+      if (!box.hidden) renderAudit();
+    });
+  }
+
   function bind() {
     paintChromeIcons();
     document.getElementById("dateInput").addEventListener("change", (e) => {
@@ -2762,7 +3312,10 @@
     document.getElementById("confirmDelete").addEventListener("click", () => {
       if (state.pendingPaidName) {
         const name = state.pendingPaidName;
-        state.entries = L.markKadanPaid(state.entries, name);
+        const via = state.paidVia === "upi" ? "upi" : "cash";
+        const open = state.entries.filter((e) => e.type === "income" && L.payModeOf(e) === "credit" && !e.creditPaid && !e.deleted && L.nameKey((e.customerName || "").trim() || "—") === L.nameKey(name));
+        if (open.length) audit("paid", null, null, { name, amount: L.roundMoney(open.reduce((a, e) => a + Number(e.amount || 0), 0)), count: open.length, via, date: state.date });
+        state.entries = L.markKadanPaid(state.entries, name, via);
         saveStore();
         closeModal();
         resetDeleteButtons();
@@ -2773,15 +3326,24 @@
       confirmDelete();
       resetDeleteButtons();
     });
+    document.getElementById("modalBody").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-paidvia]");
+      if (!b) return;
+      state.paidVia = b.getAttribute("data-paidvia");
+      document.querySelectorAll("#paidViaSeg [data-paidvia]").forEach((x) => x.classList.toggle("on", x === b));
+    });
     document.getElementById("kadanList").addEventListener("click", (e) => {
       const btn = e.target.closest("[data-paid]");
       if (btn) askMarkPaid(btn.getAttribute("data-paid"));
     });
+    bindV11();
     document.getElementById("closeSettings").addEventListener("click", closeSettings);
     document.getElementById("saveSettings").addEventListener("click", () => {
       const typedShop = document.getElementById("setShopName").value.trim();
       state.settings.shopName = isDefaultShopName(typedShop) ? DEFAULT_SHOP_TA : typedShop;
       state.settings.menu = L.normalizeMenu(readMenuEditor());
+      state.settings.deviceName = document.getElementById("setDevice").value.trim().slice(0, 40);
+      state.settings.combos = L.normalizeCombos(comboDraftFromDom(), state.settings.menu);
       saveStore();
       closeSettings();
       render();

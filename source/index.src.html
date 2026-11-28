@@ -576,6 +576,54 @@
     .rc-row .btn-del { min-height: 48px; }
     .stock-fx { display: block; font-size: 13px; font-weight: 700; color: #6B4F3A; }
     .badge.neg { background: #FDECEC; color: #9B1C1C; }
+    /* ---- v11 ---- */
+    .combo-row { display: flex; gap: 8px; margin: 0 0 10px; }
+    .combo-row[hidden] { display: none !important; }
+    .combo-btn { flex: 1 1 0; min-width: 0; min-height: 60px; border-radius: 16px; border: 2px solid var(--coffee); background: #FFF4DB; color: var(--ink); padding: 4px 6px; font-weight: 700; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+    .combo-btn:active { background: #F0E0B8; }
+    .combo-btn .cn { font-size: 15px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .combo-btn .cp { font-size: 13px; color: var(--income); }
+    .tabbar button.has-low { position: relative; }
+    .tabbar button.has-low::after { content: ""; position: absolute; top: 6px; right: calc(50% - 22px); width: 9px; height: 9px; border-radius: 50%; background: #D32F2F; border: 1.5px solid #3A2416; }
+    .badge.low { background: #D32F2F; color: #fff; }
+    .shop-sub { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .shop-actions.four { grid-template-columns: 1fr 1fr; }
+    .inline-row { display: flex; gap: 8px; align-items: stretch; margin: 4px 0; }
+    .inline-row input { flex: 1; min-width: 0; min-height: 52px; }
+    .inline-row button { min-height: 52px; border-radius: 12px; padding: 0 14px; font-weight: 700; border: 0; background: var(--coffee); color: #fff; }
+    .galla-line { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-weight: 600; }
+    .galla-line.tot { border-top: 1.5px solid var(--line); margin-top: 4px; padding-top: 6px; font-size: 17px; font-weight: 700; }
+    .galla-res { border-radius: 14px; padding: 10px 12px; margin: 10px 0 4px; font-weight: 700; text-align: center; }
+    .galla-res.short { background: #FDECEC; color: #9B1C1C; }
+    .galla-res.extra { background: #E8F0FE; color: #1A3A8A; }
+    .galla-res.even { background: #E1F5E8; color: #0A6B3C; }
+    .galla-res .big { font-size: 24px; display: block; }
+    .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+    .seg button { min-height: 52px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; }
+    .seg button.on { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+    .roll-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 8px 0; text-align: center; }
+    .roll-stats div { background: #FFF4DB; border-radius: 12px; padding: 8px 4px; font-weight: 700; }
+    .roll-stats .k { font-size: 12px; opacity: 0.85; }
+    .roll-stats .v { font-size: 18px; }
+    .roll-bars { display: flex; align-items: flex-end; gap: 2px; height: 56px; margin: 8px 0 2px; }
+    .roll-bars i { flex: 1; background: var(--saffron, #E88C1E); border-radius: 3px 3px 0 0; min-height: 2px; display: block; }
+    .sup-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); width: 100%; background: transparent; border-left: 0; border-right: 0; border-top: 0; text-align: left; font: inherit; }
+    .sup-item .bal { font-weight: 700; font-size: 18px; color: #9B1C1C; text-align: right; }
+    .sup-item .bal.ok { color: #0A6B3C; }
+    .tx-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .tx-row .btn-del { min-height: 44px; min-width: 44px; }
+    .tx-bill { color: #9B1C1C; font-weight: 700; }
+    .tx-pay { color: #0A6B3C; font-weight: 700; }
+    .combo-edit { border: 1.5px solid var(--line); border-radius: 14px; padding: 8px; margin: 8px 0; background: #fff; }
+    .combo-edit input.cname { width: 100%; min-height: 48px; margin: 4px 0; }
+    .cl-row { display: grid; grid-template-columns: 1fr 70px 48px; gap: 6px; margin: 4px 0; }
+    .cl-row select, .cl-row input { min-height: 48px; width: 100%; min-width: 0; }
+    .audit-row { border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 14px; }
+    .audit-row .who { font-size: 12px; opacity: 0.8; }
+    .audit-del { color: #9B1C1C; font-weight: 700; }
+    .audit-edit { color: #6B3F00; font-weight: 700; }
+    #toast.undo-timer::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 5px; height: 3px; border-radius: 3px; background: rgba(255,248,238,0.85); transform-origin: left; animation: undoBar 5s linear forwards; }
+    @keyframes undoBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
   </style>
 </head>
 <body>
@@ -700,6 +748,7 @@
           <button type="button" data-setqty="10">10</button>
         </div>
       </div>
+      <div class="combo-row" id="comboRow" hidden></div>
       <div class="menu-grid" id="menuGrid"></div>
 
       <h2 class="sec bi"><span class="ta">இன்றைய பதிவுகள்</span><span class="en">Today's entries</span></h2>
@@ -715,7 +764,27 @@
 
     <div id="panelSummary" class="panel" hidden>
       <div class="card" id="eodCard"></div>
+      <div class="card" id="gallaCard">
+        <h2 class="sec bi" style="margin-top:0"><span class="ta">கல்லா சரிபார்ப்பு</span><span class="en">Cash box check</span></h2>
+        <div class="help" id="gallaDate"></div>
+        <label class="lab bi" for="gallaOpening"><span class="ta">காலைத் தொடக்கப் பணம் (₹)</span><span class="en">Opening cash (₹)</span></label>
+        <div class="inline-row"><input id="gallaOpening" inputmode="decimal" placeholder="0"><button type="button" id="gallaOpeningSave"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save</span></span></button></div>
+        <div class="help" id="gallaCarry" hidden></div>
+        <div id="gallaBreakdown"></div>
+        <label class="lab bi" for="gallaActual"><span class="ta">இரவு கல்லாவில் உள்ள உண்மையான பணம் (₹)</span><span class="en">Actual cash in the box now (₹)</span></label>
+        <div class="inline-row"><input id="gallaActual" inputmode="decimal" placeholder="0"><button type="button" id="gallaActualSave"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save</span></span></button></div>
+        <div id="gallaResult"></div>
+        <p class="help"><span class="bi"><span class="ta">ரொக்கம் மட்டும்: UPI, கடன் விற்பனை சேராது. கடன் ரொக்கமாகத் திரும்பினால் சேரும். பணியாளர் / சப்ளையர் ரொக்கக் கொடுப்பனவு கழியும்.</span><span class="en">Cash only: UPI and credit sales are left out. Credit repaid in cash counts in; wages, purchases and supplier payments paid in cash go out.</span></span></p>
+      </div>
       <button type="button" class="save" id="btnWhatsApp"><span class="bi" style="align-items:center"><span class="ta">வாட்ஸ்அப்பில் பகிர்</span><span class="en">Share to WhatsApp</span></span></button>
+      <div class="card" id="rollCard" style="margin-top:12px">
+        <h2 class="sec bi" style="margin-top:0"><span class="ta">கடந்த 7 / 30 நாட்கள்</span><span class="en">Last 7 / 30 days</span></h2>
+        <div class="seg" id="rollSeg">
+          <button type="button" class="on" data-roll="7"><span class="bi" style="align-items:center"><span class="ta">7 நாட்கள்</span><span class="en">7 days</span></span></button>
+          <button type="button" data-roll="30"><span class="bi" style="align-items:center"><span class="ta">30 நாட்கள்</span><span class="en">30 days</span></span></button>
+        </div>
+        <div id="rollBody"></div>
+      </div>
       <div class="card" id="weekCard" style="margin-top:12px"></div>
       <div class="card" id="monthCard"></div>
       <div class="card person-card" id="personSumCard"></div>
@@ -727,6 +796,7 @@
       <div class="shop-sub" id="shopSub">
         <button type="button" class="on" data-shop="stock"><span class="bi" style="align-items:center"><span class="ta">இருப்பு</span><span class="en">Stock</span></span></button>
         <button type="button" data-shop="recipes"><span class="bi" style="align-items:center"><span class="ta">செய்முறை</span><span class="en">Recipes</span></span></button>
+        <button type="button" data-shop="suppliers"><span class="bi" style="align-items:center"><span class="ta">சப்ளையர்</span><span class="en">Suppliers</span></span></button>
         <button type="button" data-shop="margins"><span class="bi" style="align-items:center"><span class="ta">லாபம்</span><span class="en">Margins</span></span></button>
         <button type="button" data-shop="staff"><span class="bi" style="align-items:center"><span class="ta">பணியாளர்</span><span class="en">Staff</span></span></button>
       </div>
@@ -734,11 +804,48 @@
       <div id="shopStock">
         <div class="card">
           <h2 class="sec bi" style="margin-top:0"><span class="ta">சரக்கு இருப்பு</span><span class="en">Stock on hand</span></h2>
-          <div class="shop-actions">
+          <div class="shop-actions four">
             <button type="button" id="btnStockIn"><span class="bi"><span class="ta">+ இருப்பு</span><span class="en">Add stock</span></span></button>
             <button type="button" id="btnStockOut"><span class="bi"><span class="ta">பயன்படுத்து</span><span class="en">Use</span></span></button>
             <button type="button" id="btnStockNew"><span class="bi"><span class="ta">+ பொருள்</span><span class="en">New item</span></span></button>
+            <button type="button" id="btnWaste"><span class="bi"><span class="ta">🗑 வீணானது</span><span class="en">Wastage</span></span></button>
           </div>
+          <form class="shop-form" id="wasteForm" hidden>
+            <label class="lab bi" for="wasteItemSel"><span class="ta">பொருள்</span><span class="en">Item</span></label>
+            <select id="wasteItemSel" class="full"></select>
+            <div class="row2">
+              <div>
+                <label class="lab bi" for="wasteQty"><span class="ta">வீணான அளவு</span><span class="en">Wasted qty</span></label>
+                <input id="wasteQty" inputmode="decimal" placeholder="0">
+              </div>
+              <div>
+                <label class="lab bi" for="wasteCost"><span class="ta">இழப்பு (₹)</span><span class="en">Loss (₹)</span></label>
+                <input id="wasteCost" inputmode="decimal" placeholder="optional">
+              </div>
+            </div>
+            <label class="lab bi" for="wasteReason"><span class="ta">காரணம்</span><span class="en">Reason</span></label>
+            <select id="wasteReason" class="full">
+              <option value="spoiled">spoiled</option>
+              <option value="leftover">leftover</option>
+              <option value="spilled">spilled</option>
+              <option value="other">other</option>
+            </select>
+            <p class="help"><span class="bi"><span class="ta">இழப்புத் தொகை போட்டால் லாபத்தில் கூடுதல் செலவாகக் கணக்காகும் (கல்லாவைப் பாதிக்காது). இந்தப் பொருளை ஏற்கனவே செலவாகப் பதிவு செய்திருந்தால் காலியாக விடுங்கள்.</span><span class="en">If you enter a loss it counts as an extra cost in profit (not as cash from the box). Leave it empty if you already logged this purchase as an expense.</span></span></p>
+            <div class="shop-actions">
+              <button type="submit" class="save" id="wasteSave" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="wasteCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+            <div class="form-error" id="wasteError"></div>
+          </form>
+          <form class="shop-form" id="stockMinForm" hidden>
+            <div id="stockMinTitle" style="font-weight:700"></div>
+            <label class="lab bi" for="stockMinVal"><span class="ta">குறைந்த இருப்பு எச்சரிக்கை அளவு</span><span class="en">Alert when stock is at or below</span></label>
+            <input id="stockMinVal" inputmode="decimal" class="full">
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="stockMinCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+          </form>
           <form class="shop-form" id="stockMoveForm" hidden>
             <input type="hidden" id="stockMoveKind" value="in">
             <label class="lab bi" for="stockItemSel"><span class="ta">பொருள்</span><span class="en">Item</span></label>
@@ -786,11 +893,78 @@
             </div>
           </form>
           <div id="stockList"></div>
+          <div id="wasteListWrap" hidden>
+            <h3 class="bi" style="margin:12px 0 4px;font-size:16px"><span class="ta">சமீபத்திய வீண்</span><span class="en">Recent wastage</span></h3>
+            <div id="wasteList"></div>
+          </div>
           <p class="help"><span class="bi"><span class="ta">விற்பனைக்கு ஏற்ப இருப்பு தானாகக் குறையும் (செய்முறை தாவலில் அமைக்கவும்). வாங்கும் செலவுகளும் இருப்பைக் கூட்டும்.</span><span class="en">Stock goes down by itself as you sell (set it in the Recipes tab). Purchases add to stock.</span></span></p>
         </div>
         <div class="card" style="background:#FFF9E6">
           <strong class="bi"><span class="ta">குறைந்த இருப்பு எச்சரிக்கை</span><span class="en">Low-stock alerts</span></strong>
           <p class="help" id="stockAlertBox" style="margin:6px 0 0"><span class="bi"><span class="ta">அனைத்து பொருட்களும் போதிய அளவில் உள்ளன.</span><span class="en">All tracked items are above the alert level.</span></span></p>
+        </div>
+      </div>
+
+      <div id="shopSuppliers" hidden>
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">சப்ளையர் பாக்கி</span><span class="en">Supplier due</span></h2>
+          <p class="help"><span class="bi"><span class="ta">நீங்கள் சப்ளையர்களுக்குக் கொடுக்க வேண்டிய தொகை. வாடிக்கையாளர் கடனிலிருந்து தனி.</span><span class="en">What you owe your suppliers. Separate from customers' credit (Kadan).</span></span></p>
+          <div id="supTotal"></div>
+          <div id="supList"></div>
+          <button type="button" class="ghost" id="btnSupNew" style="width:100%;margin:8px 0"><span class="bi" style="align-items:center"><span class="ta">+ சப்ளையர்</span><span class="en">+ Supplier</span></span></button>
+          <form class="shop-form" id="supNewForm" hidden>
+            <label class="lab bi" for="supName"><span class="ta">பெயர் (பால்காரர், காய்கறி, கேஸ்…)</span><span class="en">Name (milk, vegetables, gas…)</span></label>
+            <input id="supName" class="full" maxlength="60">
+            <label class="lab bi" for="supPhone"><span class="ta">போன் (விருப்பம்)</span><span class="en">Phone (optional)</span></label>
+            <input id="supPhone" class="full" inputmode="tel" maxlength="20">
+            <div class="form-error" id="supNewError"></div>
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="supNewCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+          </form>
+        </div>
+        <div class="card" id="supDetail" hidden>
+          <div id="supDetailHead"></div>
+          <div class="shop-actions" style="grid-template-columns:1fr 1fr">
+            <button type="button" id="btnSupBill"><span class="bi"><span class="ta">+ பில்</span><span class="en">+ Bill</span></span></button>
+            <button type="button" id="btnSupPay"><span class="bi"><span class="ta">+ கொடுத்தது</span><span class="en">+ Payment</span></span></button>
+          </div>
+          <form class="shop-form" id="supTxForm" hidden>
+            <input type="hidden" id="supTxType" value="bill">
+            <div id="supTxTitle" style="font-weight:700"></div>
+            <div class="row2">
+              <div>
+                <label class="lab bi" for="supTxAmount"><span class="ta">தொகை (₹)</span><span class="en">Amount (₹)</span></label>
+                <input id="supTxAmount" inputmode="decimal" placeholder="0">
+              </div>
+              <div>
+                <label class="lab bi" for="supTxDate"><span class="ta">தேதி</span><span class="en">Date</span></label>
+                <input id="supTxDate" type="date">
+              </div>
+            </div>
+            <label class="lab bi" for="supTxNote"><span class="ta">குறிப்பு</span><span class="en">Note</span></label>
+            <input id="supTxNote" class="full" placeholder="optional">
+            <div id="supPayOpts">
+              <label class="lab bi" for="supTxMethod"><span class="ta">எப்படிக் கொடுத்தீர்கள்</span><span class="en">Paid by</span></label>
+              <select id="supTxMethod" class="full"><option value="cash">cash</option><option value="upi">UPI</option><option value="bank">bank</option></select>
+              <label class="check" style="margin-top:8px">
+                <input type="checkbox" id="supAsExpense">
+                <span class="bi"><span class="ta">செலவாகவும் பதிவு செய் (இந்தப் பொருளை இன்னும் செலவாகப் போடவில்லை என்றால் மட்டும்)</span><span class="en">Also log as an expense (only if you have not already logged this purchase)</span></span>
+              </label>
+            </div>
+            <div class="form-error" id="supTxError"></div>
+            <div class="shop-actions">
+              <button type="submit" class="save" style="width:auto;padding:0 16px"><span class="bi"><span class="ta">சேமி</span><span class="en">Save</span></span></button>
+              <button type="button" class="ghost" id="supTxCancel" style="width:auto"><span class="bi"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            </div>
+          </form>
+          <div id="supTxList"></div>
+          <div class="shop-actions" style="grid-template-columns:1fr 1fr">
+            <button type="button" class="ghost" id="supClose"><span class="bi"><span class="ta">மூடு</span><span class="en">Close</span></span></button>
+            <button type="button" class="ghost" style="color:#9B1C1C;font-weight:700" id="supRemove"><span class="bi"><span class="ta">சப்ளையரை நீக்கு</span><span class="en">Remove supplier</span></span></button>
+          </div>
+          <p class="help"><span class="bi"><span class="ta">பில் = நீங்கள் கொடுக்க வேண்டியது கூடும்; கொடுத்தது = குறையும். பில் தானாகச் செலவாகாது.</span><span class="en">A bill raises what you owe, a payment lowers it. Bills never become expenses by themselves.</span></span></p>
         </div>
       </div>
 
@@ -1082,13 +1256,23 @@
     <button type="button" class="ghost" id="btnPinSet" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN அமை</span><span class="en">Set owner PIN</span></span></button>
     <button type="button" class="ghost" id="btnPinChange" hidden style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN மாற்று</span><span class="en">Change PIN</span></span></button>
     <button type="button" class="danger" id="btnPinOff" hidden style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN-ஐ நிறுத்து</span><span class="en">Turn off PIN</span></span></button>
+    <label class="lab bi" for="setDevice"><span class="ta">இந்த போன் / நபர் பெயர் (பதிவு வரலாற்றில் காட்டும்)</span><span class="en">This phone / person name (shown in the edit log)</span></label>
+    <input class="full" id="setDevice" maxlength="40">
     <label class="lab bi" for="setShopName"><span class="ta">கடையின் பெயர்</span><span class="en">Shop name</span></label>
     <input class="full" id="setShopName" maxlength="80">
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">மெனு விலைகள்</span><span class="en">Menu prices (editable)</span></h3>
     <p class="help"><span class="bi"><span class="ta">விரைவு பொத்தான்களின் விலை இங்கே மாற்றலாம்.</span><span class="en">These prices are used when you tap a menu button. Making cost (for item profit) can also be set on the Shop → Margins tab.</span></span></p>
     <div id="menuEditor"></div>
     <button type="button" class="ghost" id="addMenuItem" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">+ மெனுப் பொருள்</span><span class="en">+ Menu item</span></span></button>
+    <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">காம்போ பொத்தான்கள் (முகப்பில்)</span><span class="en">Combo buttons (on Today)</span></h3>
+    <p class="help"><span class="bi"><span class="ta">2-3 சேர்க்கை பொத்தான்கள் — ஒரே தட்டலில் பல பொருட்கள் பதிவாகும் (எ.கா. 2 இட்லி + 1 டீ). இருப்பும் தானாகக் குறையும்.</span><span class="en">2–3 buttons that log several items in one tap (e.g. 2 idli + 1 tea). Stock goes down by itself too.</span></span></p>
+    <div id="comboEditor"></div>
+    <button type="button" class="ghost" id="addCombo" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">+ காம்போ</span><span class="en">+ Combo</span></span></button>
     <button type="button" class="save" id="saveSettings" style="margin-top:12px"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save settings</span></span></button>
+    <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">திருத்தம் / நீக்கம் வரலாறு</span><span class="en">Edit &amp; delete log</span></h3>
+    <p class="help"><span class="bi"><span class="ta">பதிவுகளை யார், எப்போது மாற்றினார் / நீக்கினார் — பார்க்க மட்டும்.</span><span class="en">Who changed or deleted which entry, and when — read only.</span></span></p>
+    <button type="button" class="ghost" id="btnAudit" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">வரலாற்றைக் காட்டு</span><span class="en">Show log</span></span></button>
+    <div id="auditList" hidden></div>
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">காப்பு</span><span class="en">Backup</span></h3>
     <p class="help"><span class="bi"><span class="ta">பதிவுகள் இந்தத் தொலைபேசியின் நினைவிலேயே இருக்கும். வேறு போனுக்கு மாற்றினாலோ, தரவை அழித்தாலோ காப்புக் கோப்பு தேவை.</span><span class="en">Entries stay on this phone. Export a backup before changing phones.</span></span></p>
     <p class="help" id="lastBackupLine"></p>

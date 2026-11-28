@@ -939,7 +939,7 @@
     return [...groups.values()].sort((a, b) => b.owed - a.owed || a.name.localeCompare(b.name));
   }
 
-  function markKadanPaid(entries, customerName) {
+  function markKadanPaid(entries, customerName, via) {
     const key = nameKey(customerName);
     const now = new Date().toISOString();
     return (entries || []).map((e) => {
@@ -947,7 +947,7 @@
       if (e.type !== "income" || payModeOf(e) !== "credit" || e.creditPaid) return e;
       const display = String(e.customerName || "").trim() || "—";
       if (nameKey(display) !== key) return e;
-      return { ...e, creditPaid: true, creditPaidAt: now, updatedAt: now };
+      return via ? { ...e, creditPaid: true, creditPaidAt: now, creditPaidVia: via === "upi" ? "upi" : "cash", updatedAt: now } : { ...e, creditPaid: true, creditPaidAt: now, updatedAt: now };
     });
   }
 
@@ -1940,7 +1940,10 @@
         wageKind: input.wageKind ? String(input.wageKind) : "",
         wageRecordId: input.wageRecordId ? String(input.wageRecordId) : "",
         stockItemId: input.stockItemId ? String(input.stockItemId) : "",
-        stockMoveId: input.stockMoveId ? String(input.stockMoveId) : ""
+        stockMoveId: input.stockMoveId ? String(input.stockMoveId) : "",
+        source: input.source ? String(input.source) : "",
+        nonCash: !!input.nonCash,
+        refId: input.refId ? String(input.refId) : ""
       };
       entries = entries.concat([entry]);
       return { ok: true, entry, entries: snapshot() };
@@ -3342,8 +3345,9 @@
     return out;
   }
 
-  function daySummaryTextLang(entries, date, shopName, lang) {
-    if (!lang || lang === "ta") return [daySummaryText(entries, date, shopName)].concat(boughtSummaryLines(entries, date, "ta"), namedSummaryLines(entries, date, "ta")).join("\n");
+  function daySummaryTextLang(entries, date, shopName, lang, extra) {
+    const gl = extra && extra.galla ? (extra.galla.expected != null ? extra.galla : null) : null;
+    if (!lang || lang === "ta") return [daySummaryText(entries, date, shopName)].concat(boughtSummaryLines(entries, date, "ta"), namedSummaryLines(entries, date, "ta"), gallaSummaryLines(gl, "ta")).join("\n");
     const L1 = SUMMARY_TEXT[lang] || SUMMARY_TEXT.en;
     const E = SUMMARY_TEXT.en;
     const both = (k) => (lang === "en" ? E[k] : L1[k] + " / " + E[k]);
@@ -3370,7 +3374,7 @@
         lines.push(i + 1 + ". " + itemLabel(x.item, lang) + " — ₹" + x.amount + (x.qty ? " (" + qtyUnitLabel({ qty: x.qty, unit: x.unit }, lang === "en" ? null : lang) + ")" : ""));
       });
     }
-    return lines.concat(boughtSummaryLines(entries, date, lang), namedSummaryLines(entries, date, lang)).join("\n");
+    return lines.concat(boughtSummaryLines(entries, date, lang), namedSummaryLines(entries, date, lang), gallaSummaryLines(gl, lang)).join("\n");
   }
 
 
@@ -4255,7 +4259,7 @@
           want.set(e.id + "|" + e.stockItemId + "|in", { entryId: e.id, itemId: e.stockItemId, type: "in", qty: q > 0 ? roundQty(q) : old.qty, date, source: "purchase", note: old.note || "" });
           continue;
         }
-        if (e.stockMoveId || e.category === "wage" || e.category === "paid-to" || e.category === "received-from") continue;
+        if (e.stockMoveId || e.source === "waste" || e.source === "supplier" || e.category === "wage" || e.category === "paid-to" || e.category === "received-from") continue;
         if (!since || date < since) continue;
         const q = Number(e.qty);
         if (!(q > 0)) continue;
@@ -4378,12 +4382,412 @@
     return s;
   }
 
+  /* =====================================================================
+   * v11: audit log, galla (cash box) check, supplier due book, wastage,
+   *      rolling 7 / 30 day summary, combo tiles.
+   * ===================================================================== */
+  const AUDIT_MAX = 500;
+  const AUDIT_FIELDS = ["type", "date", "item", "qty", "unit", "unitPrice", "amount", "payMode", "customerName", "note"];
+  function auditPick(e) {
+    const out = {};
+    if (!e) return out;
+    for (const k of AUDIT_FIELDS) {
+      const v = e[k];
+      if (v !== undefined && v !== null && v !== "") out[k] = v;
+    }
+    return out;
+  }
+  /** Which user-visible fields differ between two versions of an entry (old → new). */
+  function auditDiff(oldE, newE) {
+    const a = auditPick(oldE);
+    const b = auditPick(newE);
+    const o = {};
+    const n = {};
+    const changed = [];
+    for (const k of AUDIT_FIELDS) {
+      const x = a[k] === undefined ? "" : a[k];
+      const y = b[k] === undefined ? "" : b[k];
+      if (String(x) !== String(y)) {
+        changed.push(k);
+        o[k] = x;
+        n[k] = y;
+      }
+    }
+    return { changed, old: o, new: n };
+  }
+  /** One audit record, or null for an edit that changed nothing. `ctx` = {device, now}. */
+  function makeAuditRecord(action, oldE, newE, ctx) {
+    ctx = ctx || {};
+    const at = new Date(ctx.now || Date.now()).toISOString();
+    const base = { id: newId(), at, action, by: String(ctx.device || "").trim() };
+    if (action === "edit") {
+      const d = auditDiff(oldE, newE);
+      if (!d.changed.length) return null;
+      return { ...base, entryId: oldE && oldE.id, item: (oldE && oldE.item) || "", date: oldE && oldE.date, type: oldE && oldE.type, changed: d.changed, old: d.old, new: d.new };
+    }
+    if (action === "delete") {
+      return { ...base, entryId: oldE && oldE.id, item: (oldE && oldE.item) || "", date: oldE && oldE.date, type: oldE && oldE.type, changed: [], old: auditPick(oldE), new: null };
+    }
+    if (action === "restore") {
+      return { ...base, entryId: newE && newE.id, item: (newE && newE.item) || "", date: newE && newE.date, type: newE && newE.type, changed: [], old: null, new: auditPick(newE) };
+    }
+    if (action === "paid") {
+      return { ...base, entryId: "", item: String((ctx.name) || ""), date: ctx.date || "", type: "income", changed: [], old: { amount: ctx.amount, count: ctx.count }, new: { creditPaid: true, via: ctx.via || "" } };
+    }
+    return null;
+  }
+  function addAudit(log, rec) {
+    if (!rec) return Array.isArray(log) ? log : [];
+    return [rec].concat(Array.isArray(log) ? log : []).slice(0, AUDIT_MAX);
+  }
+
+  // ---- Galla (cash box) ----
+  function localDayOf(iso) {
+    return iso ? isoToLocalDay(iso) : "";
+  }
+  /**
+   * Expected cash in the box for one day = opening + cash sales + credit repaid in cash today
+   *   − cash expenses (staff wages, stock purchases, supplier payments paid in cash included).
+   * UPI and credit sales/expenses are NOT cash. Wastage cost entries (nonCash) are not cash going out.
+   * A supplier payment counts as cash out only when it is not already an expense entry (no double count).
+   */
+  function gallaFigures(entries, date, opts) {
+    opts = opts || {};
+    const d = normalizeDate(date);
+    let cashSales = 0;
+    let cashExpenses = 0;
+    let kadanCash = 0;
+    const entryIds = new Set();
+    for (const e of entries || []) {
+      if (!e || e.deleted) continue;
+      entryIds.add(e.id);
+      const amt = Number(e.amount);
+      if (Number.isNaN(amt)) continue;
+      if (e.date === d) {
+        if (e.type === "income" && payModeOf(e) === "cash") cashSales += amt;
+        else if (e.type === "expense" && payModeOf(e) === "cash" && !e.nonCash) cashExpenses += amt;
+      }
+      if (e.type === "income" && payModeOf(e) === "credit" && e.creditPaid && amt > 0 && localDayOf(e.creditPaidAt) === d && (e.creditPaidVia || "cash") === "cash") {
+        kadanCash += amt;
+      }
+    }
+    let supplierCash = 0;
+    for (const t of opts.supplierTx || []) {
+      if (!t || t.type !== "payment" || t.method !== "cash" || normalizeDate(t.date) !== d) continue;
+      if (t.entryId && entryIds.has(t.entryId)) continue; // already counted as an expense entry
+      supplierCash += Number(t.amount) || 0;
+    }
+    const opening = opts.opening == null || opts.opening === "" || Number.isNaN(Number(opts.opening)) ? 0 : Number(opts.opening);
+    cashSales = roundMoney(cashSales);
+    cashExpenses = roundMoney(cashExpenses);
+    kadanCash = roundMoney(kadanCash);
+    supplierCash = roundMoney(supplierCash);
+    const expected = roundMoney(opening + cashSales + kadanCash - cashExpenses - supplierCash);
+    return { date: d, opening: roundMoney(opening), cashSales, kadanCash, cashExpenses, supplierCash, expected };
+  }
+  function gallaDifference(expected, actual) {
+    if (actual == null || actual === "" || Number.isNaN(Number(actual))) return { diff: null, status: "none" };
+    const diff = roundMoney(Number(actual) - Number(expected));
+    return { diff, status: diff === 0 ? "even" : diff < 0 ? "short" : "extra" };
+  }
+  function gallaGet(galla, date) {
+    const r = (galla && galla[normalizeDate(date)]) || null;
+    return r ? { opening: r.opening == null ? null : Number(r.opening), actual: r.actual == null ? null : Number(r.actual) } : { opening: null, actual: null };
+  }
+  /** Save opening and/or actual for a day; keeps the latest 120 days. */
+  function gallaSet(galla, date, patch) {
+    const next = { ...(galla || {}) };
+    const k = normalizeDate(date);
+    const cur = next[k] || {};
+    const up = { ...cur };
+    if (patch && "opening" in patch) up.opening = patch.opening == null || patch.opening === "" ? null : roundMoney(Number(patch.opening));
+    if (patch && "actual" in patch) up.actual = patch.actual == null || patch.actual === "" ? null : roundMoney(Number(patch.actual));
+    up.updatedAt = new Date().toISOString();
+    next[k] = up;
+    const keys = Object.keys(next).sort();
+    while (keys.length > 120) delete next[keys.shift()];
+    return next;
+  }
+  const GALLA_TEXT = {
+    ta: { title: "கல்லா சரிபார்ப்பு", open: "காலைத் தொடக்கப் பணம்", exp: "இருக்க வேண்டிய ரொக்கம்", act: "உண்மையான ரொக்கம்", short: "குறைவு", extra: "கூடுதல்", even: "சரியாக உள்ளது" },
+    en: { title: "Cash box check", open: "Opening cash", exp: "Expected cash", act: "Actual cash", short: "Short", extra: "Extra", even: "Matches" },
+    hi: { title: "गल्ला जाँच", open: "सुबह की शुरुआती नकदी", exp: "अपेक्षित नकदी", act: "असली नकदी", short: "कम", extra: "ज़्यादा", even: "सही है" },
+    mr: { title: "गल्ला तपासणी", open: "सकाळची सुरुवातीची रोकड", exp: "अपेक्षित रोकड", act: "प्रत्यक्ष रोकड", short: "कमी", extra: "जास्त", even: "बरोबर आहे" }
+  };
+  /** Lines for the WhatsApp daily summary (empty when no opening / actual was entered). */
+  function gallaSummaryLines(g, lang) {
+    if (!g || (g.opening == null && g.actual == null)) return [];
+    const l = GALLA_TEXT[lang] ? lang : "ta";
+    const T1 = GALLA_TEXT[l];
+    const E = GALLA_TEXT.en;
+    const both = (k) => (l === "en" ? E[k] : T1[k] + " / " + E[k]);
+    const lines = ["", both("title") + ":"];
+    if (g.opening != null) lines.push(both("open") + ": ₹" + g.opening);
+    lines.push(both("exp") + ": ₹" + g.expected);
+    if (g.actual != null) {
+      lines.push(both("act") + ": ₹" + g.actual);
+      const df = gallaDifference(g.expected, g.actual);
+      lines.push(df.status === "even" ? "✅ " + both("even") : (df.status === "short" ? "⚠️ " + both("short") : "ℹ️ " + both("extra")) + ": ₹" + Math.abs(df.diff));
+    }
+    return lines;
+  }
+
+  // ---- Rolling 7 / 30 day summary ----
+  function rollingSummary(entries, endDate, days) {
+    const to = normalizeDate(endDate);
+    const n = Math.max(1, Number(days) || 7);
+    const from = addDaysISO(to, -(n - 1));
+    const t = computeTotalsRange(entries, from, to);
+    const perDay = [];
+    for (let i = 0; i < n; i++) {
+      const d = addDaysISO(from, i);
+      const day = computeTotals(entries, d);
+      perDay.push({ date: d, income: day.income, expense: day.expense, profit: day.profit });
+    }
+    let wasteCost = 0;
+    for (const e of entries || []) {
+      if (!e || e.deleted || e.type !== "expense" || e.source !== "waste") continue;
+      if (inRange(e.date, from, to)) wasteCost += Number(e.amount) || 0;
+    }
+    return {
+      from, to, days: n,
+      income: t.income, expense: t.expense, profit: t.profit,
+      wasteCost: roundMoney(wasteCost),
+      top: topSelling(entries, from, to, 5),
+      perDay
+    };
+  }
+
+  // ---- Supplier due book ----
+  function normalizeSuppliers(list) {
+    const out = [];
+    const seen = new Set();
+    for (const s of Array.isArray(list) ? list : []) {
+      const name = String((s && s.name) || "").trim();
+      if (!name) continue;
+      const k = nameKey(name);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push({ id: String((s && s.id) || newId()), name, phone: String((s && s.phone) || "").trim() });
+    }
+    return out;
+  }
+  function normalizeSupplierTx(list) {
+    const out = [];
+    for (const t of Array.isArray(list) ? list : []) {
+      if (!t || !t.supplierId) continue;
+      const amount = roundMoney(Number(t.amount));
+      if (!(amount > 0)) continue;
+      out.push({
+        id: String(t.id || newId()),
+        supplierId: String(t.supplierId),
+        type: t.type === "payment" ? "payment" : "bill",
+        amount,
+        date: normalizeDate(t.date),
+        note: String(t.note || "").trim(),
+        method: t.type === "payment" ? (t.method === "upi" ? "upi" : t.method === "bank" ? "bank" : "cash") : "",
+        entryId: t.entryId ? String(t.entryId) : "",
+        createdAt: t.createdAt || new Date().toISOString()
+      });
+    }
+    return out;
+  }
+  function addSupplier(suppliers, input) {
+    const name = String((input && input.name) || "").trim();
+    if (!name) return { ok: false, errors: ["name"] };
+    const list = normalizeSuppliers(suppliers);
+    const dupe = list.find((s) => nameKey(s.name) === nameKey(name));
+    if (dupe) return { ok: true, suppliers: list, supplier: dupe, existing: true };
+    const supplier = { id: newId(), name, phone: String((input && input.phone) || "").trim() };
+    return { ok: true, suppliers: list.concat([supplier]), supplier };
+  }
+  /** bill = we owe more; payment = we owe less. */
+  function addSupplierTx(tx, input) {
+    input = input || {};
+    const amount = roundMoney(Number(input.amount));
+    if (!input.supplierId) return { ok: false, errors: ["supplier"] };
+    if (!(amount > 0)) return { ok: false, errors: ["amount"] };
+    const type = input.type === "payment" ? "payment" : "bill";
+    const rec = normalizeSupplierTx([{ ...input, type, amount, id: input.id || newId() }])[0];
+    return { ok: true, tx: normalizeSupplierTx(tx).concat([rec]), rec };
+  }
+  function removeSupplierTx(tx, id) {
+    const list = normalizeSupplierTx(tx);
+    const rec = list.find((t) => t.id === id);
+    if (!rec) return { ok: false, errors: ["not-found"] };
+    return { ok: true, tx: list.filter((t) => t.id !== id), rec };
+  }
+  function removeSupplier(suppliers, tx, id) {
+    const sup = normalizeSuppliers(suppliers).find((s) => s.id === id);
+    if (!sup) return { ok: false, errors: ["not-found"] };
+    return { ok: true, suppliers: normalizeSuppliers(suppliers).filter((s) => s.id !== id), tx: normalizeSupplierTx(tx).filter((t) => t.supplierId !== id), supplier: sup };
+  }
+  function supplierBalances(suppliers, tx) {
+    const list = normalizeSupplierTx(tx);
+    return normalizeSuppliers(suppliers).map((s) => {
+      let bills = 0;
+      let paid = 0;
+      let last = "";
+      for (const t of list) {
+        if (t.supplierId !== s.id) continue;
+        if (t.type === "bill") bills += t.amount; else paid += t.amount;
+        if (t.date > last) last = t.date;
+      }
+      bills = roundMoney(bills);
+      paid = roundMoney(paid);
+      return { id: s.id, name: s.name, phone: s.phone, bills, paid, balance: roundMoney(bills - paid), last };
+    }).sort((a, b) => b.balance - a.balance || a.name.localeCompare(b.name));
+  }
+  function supplierTotalDue(suppliers, tx) {
+    return roundMoney(supplierBalances(suppliers, tx).reduce((s, x) => s + Math.max(0, x.balance), 0));
+  }
+  /** Expense entry for a supplier payment that the user wants in the books (profit). Bills never create expenses. */
+  function supplierPaymentExpense(supplier, rec, noteText) {
+    return {
+      id: rec.entryId,
+      type: "expense",
+      date: rec.date,
+      item: supplier.name,
+      amount: rec.amount,
+      payMode: rec.method === "cash" ? "cash" : "upi",
+      note: String(noteText || rec.note || "").trim() || "Supplier payment",
+      category: "supplier",
+      source: "supplier",
+      refId: rec.id
+    };
+  }
+
+  // ---- Wastage + min stock ----
+  function setMinAlert(stock, itemId, min) {
+    const n = Number(min);
+    if (Number.isNaN(n) || n < 0) return { ok: false, errors: ["min"] };
+    const items = (stock || []).map((s) => ({ ...s }));
+    const idx = items.findIndex((s) => s.id === itemId);
+    if (idx === -1) return { ok: false, errors: ["not-found"] };
+    items[idx].minAlert = n;
+    return { ok: true, stock: items };
+  }
+  function isLowStock(item, moves) {
+    if (!item) return false;
+    const tracked = Number(item.qty) !== 0 || (moves || []).some((m) => m.itemId === item.id);
+    return tracked && Number(item.qty) <= Number(item.minAlert || 0);
+  }
+  /** Last known purchase price per base unit (from a stock-in move that had an amount). */
+  function estimateUnitCost(moves, itemId) {
+    const ins = (moves || []).filter((m) => m.itemId === itemId && m.type === "in" && Number(m.amount) > 0 && Number(m.qty) > 0);
+    if (!ins.length) return null;
+    ins.sort((a, b) => String(a.createdAt || a.date || "").localeCompare(String(b.createdAt || b.date || "")));
+    const m = ins[ins.length - 1];
+    return roundMoney(Number(m.amount) / Number(m.qty));
+  }
+  /**
+   * Wastage: stock goes down (even below zero — a count may simply be behind) and, when a cost is given,
+   * an expense entry flagged nonCash is returned so profit includes the loss without touching the cash box.
+   */
+  function wasteStock(stock, moves, input) {
+    input = input || {};
+    const qty = Number(input.qty);
+    if (!(qty > 0) || Number.isNaN(qty)) return { ok: false, errors: ["qty"] };
+    const items = (stock || []).map((s) => ({ ...s }));
+    const idx = items.findIndex((s) => s.id === input.itemId);
+    if (idx === -1) return { ok: false, errors: ["not-found"] };
+    items[idx] = { ...items[idx], qty: roundQty(Number(items[idx].qty) - qty) };
+    const cost = input.cost == null || input.cost === "" ? 0 : roundMoney(Number(input.cost));
+    const move = {
+      id: input.moveId || newId(),
+      type: "out",
+      kind: "waste",
+      itemId: items[idx].id,
+      qty,
+      date: normalizeDate(input.date),
+      reason: String(input.reason || "other"),
+      note: String(input.note || "").trim(),
+      cost: cost > 0 ? cost : 0,
+      wasteEntryId: cost > 0 ? (input.entryId || newId()) : "",
+      createdAt: new Date().toISOString()
+    };
+    let expense = null;
+    if (cost > 0) {
+      expense = {
+        id: move.wasteEntryId,
+        type: "expense",
+        date: move.date,
+        item: String(input.label || "Wastage") + " — " + (items[idx].nameTa || items[idx].nameEn),
+        qty,
+        unit: items[idx].unit,
+        amount: cost,
+        payMode: "cash",
+        note: move.note || move.reason,
+        category: "wastage",
+        source: "waste",
+        nonCash: true,
+        refId: move.id
+      };
+    }
+    return { ok: true, stock: items, stockMoves: (moves || []).concat([move]), move, expense, item: items[idx] };
+  }
+  function wasteMoves(moves) {
+    return (moves || []).filter((m) => m && m.kind === "waste").slice().sort((a, b) => String(b.createdAt || b.date).localeCompare(String(a.createdAt || a.date)));
+  }
+  /** Undo a wastage: stock comes back; the caller removes the linked expense (move.wasteEntryId). */
+  function removeWasteMove(stock, moves, moveId) {
+    const m = (moves || []).find((x) => x.id === moveId && x.kind === "waste");
+    if (!m) return { ok: false, errors: ["not-found"] };
+    const items = (stock || []).map((s) => ({ ...s }));
+    const idx = items.findIndex((s) => s.id === m.itemId);
+    if (idx !== -1) items[idx] = { ...items[idx], qty: roundQty(Number(items[idx].qty) + Number(m.qty)) };
+    return { ok: true, stock: items, stockMoves: (moves || []).filter((x) => x.id !== moveId), move: m };
+  }
+
+  // ---- Combo tiles ----
+  const COMBO_MAX = 3;
+  function normalizeCombos(list, menu) {
+    const ids = new Set((menu || []).map((m) => m.id));
+    const out = [];
+    for (const c of Array.isArray(list) ? list : []) {
+      if (!c) continue;
+      const lines = [];
+      for (const l of Array.isArray(c.lines) ? c.lines : []) {
+        const q = Math.max(1, Math.round(Number(l && l.qty) || 1));
+        if (l && ids.has(l.menuId)) lines.push({ menuId: l.menuId, qty: Math.min(99, q) });
+      }
+      if (!lines.length) continue;
+      out.push({ id: String(c.id || newId()), name: String(c.name || "").trim(), lines });
+      if (out.length >= COMBO_MAX) break;
+    }
+    return out;
+  }
+  function comboTotal(combo, menu) {
+    let sum = 0;
+    for (const l of (combo && combo.lines) || []) {
+      const m = (menu || []).find((x) => x.id === l.menuId);
+      if (m) sum += Number(m.price || 0) * l.qty;
+    }
+    return roundMoney(sum);
+  }
+
+  /** Fill in the v11 settings fields (migration). Never touches entries. */
+  function migrateV11(settings) {
+    const s = { ...settings };
+    s.auditLog = Array.isArray(s.auditLog) ? s.auditLog.slice(0, AUDIT_MAX) : [];
+    s.deviceName = String(s.deviceName || "").trim().slice(0, 40);
+    s.galla = s.galla && typeof s.galla === "object" && !Array.isArray(s.galla) ? s.galla : {};
+    s.suppliers = normalizeSuppliers(s.suppliers);
+    s.supplierTx = normalizeSupplierTx(s.supplierTx);
+    s.combos = normalizeCombos(s.combos, s.menu);
+    return s;
+  }
+
   const api = {
     sha256Hex, hashSecret, normalizePin, normalizeAnswer, PIN_QUESTIONS, PIN_ITER, PIN_FREE_FAILS, PIN_RESET_WAIT_MS, PIN_SESSION_MS,
     createPinRecord, pinEnabled, verifyPin, verifyAnswer, replacePin, startPinReset, pinResetStatus, pinSessionValid, lockWaitMs,
     isTodayOwnEntry, pinRequiredFor,
     convertQty, stockItemByName, normalizeRecipes, setRecipe, linkLegacyStockMoves, desiredStockMoves, syncAutoStock, stockEffectsByEntry, negativeStock,
     backupFileName, buildBackupPayload, backupReminderDue, daysSinceBackup, migrateV10,
+    AUDIT_MAX, auditDiff, makeAuditRecord, addAudit, gallaFigures, gallaDifference, gallaGet, gallaSet, gallaSummaryLines, GALLA_TEXT,
+    rollingSummary, normalizeSuppliers, normalizeSupplierTx, addSupplier, addSupplierTx, removeSupplierTx, removeSupplier, supplierBalances,
+    supplierTotalDue, supplierPaymentExpense, setMinAlert, isLowStock, estimateUnitCost, wasteStock, wasteMoves, removeWasteMove,
+    COMBO_MAX, normalizeCombos, comboTotal, migrateV11,
     parseTamilNumber,
     parseUtterance,
     parseUtterances,
@@ -4446,6 +4850,7 @@
     removeWageRecord,
     normalizePayMode,
     payModeOf,
+    nameKey,
     addDaysISO,
     startOfWeek,
     endOfWeek,
