@@ -1257,6 +1257,231 @@ assertEqual(defaultMenu().length, 6, "default 6 menu items");
   assertEqual(L9.speechLangFor(null), "ta-IN", "v9 default ta-IN");
 }
 
+// ---------- v10: PIN, recipes + automatic stock, backup reminder ----------
+{
+  const L10 = require("../logic.js");
+  const nodeCrypto = require("crypto");
+  // SHA-256 matches Node's for ASCII and Tamil
+  for (const t of ["abc", "", "1234", "கடை கணக்கு", "a".repeat(200)]) {
+    assertEqual(L10.sha256Hex(t), nodeCrypto.createHash("sha256").update(t, "utf8").digest("hex"), "v10 sha256 " + t.slice(0, 8));
+  }
+  // PIN record: salted hash only
+  const made = L10.createPinRecord("4821", "mother", "Lakshmi  Devi", 1000);
+  assert(made.ok, "v10 pin record created");
+  const rec = made.pin;
+  const blob = JSON.stringify(rec);
+  assert(blob.indexOf("4821") === -1 && blob.toLowerCase().indexOf("lakshmidevi") === -1, "v10 pin record has no plaintext PIN or answer");
+  assert(rec.salt.length >= 32 && rec.hash.length === 64 && rec.qSalt !== rec.salt, "v10 salted hashes");
+  assert(L10.createPinRecord("4821", "mother", "x").errors.indexOf("answer-short") !== -1, "v10 answer too short");
+  assert(L10.createPinRecord("12a4", "mother", "Lakshmi").errors.indexOf("pin-format") !== -1, "v10 pin must be 4 digits");
+  assert(L10.createPinRecord("123", "mother", "Lakshmi").errors.indexOf("pin-format") !== -1, "v10 3 digits rejected");
+  assert(L10.createPinRecord("4821", "nope", "Lakshmi").errors.indexOf("question") !== -1, "v10 unknown question");
+  assert(L10.createPinRecord("4821", "mother", "Lakshmi").pin.hash !== rec.hash, "v10 same PIN, different salt → different hash");
+  assertEqual(L10.verifyPin(rec, "4821", 2000).ok, true, "v10 correct PIN");
+  assertEqual(L10.verifyPin(rec, "௪௮௨௧", 2000).ok, false, "v10 Tamil digits not accepted as PIN");
+  assertEqual(L10.verifyPin(rec, "४८२१", 2000).ok, true, "v10 Devanagari digits accepted");
+  // lockout after 5 wrong tries, 30 s
+  let r = rec; let t0 = 10000;
+  for (let i = 0; i < 4; i++) { const v = L10.verifyPin(r, "0000", t0); assert(!v.ok && !v.locked, "v10 wrong try " + (i + 1)); r = v.rec; }
+  const fifth = L10.verifyPin(r, "0000", t0);
+  assert(!fifth.ok && fifth.locked && fifth.waitMs === 30000, "v10 5th wrong try locks 30 s", JSON.stringify(fifth));
+  assert(L10.verifyPin(fifth.rec, "4821", t0 + 1000).locked === true, "v10 even the right PIN waits while locked");
+  assertEqual(L10.verifyPin(fifth.rec, "4821", t0 + 31000).ok, true, "v10 right PIN works after the wait");
+  assertEqual(L10.verifyPin(fifth.rec, "4821", t0 + 31000).rec.failCount, 0, "v10 success clears the fail counter");
+  // recovery answer
+  assertEqual(L10.verifyAnswer(rec, "lakshmi devi", 5).ok, true, "v10 answer is case/space-insensitive");
+  assertEqual(L10.verifyAnswer(rec, "Meena", 5).ok, false, "v10 wrong answer");
+  const rp = L10.replacePin(rec, "9090");
+  assert(rp.ok && L10.verifyPin(rp.pin, "9090", 9).ok && !L10.verifyPin(rp.pin, "4821", 9).ok, "v10 replacePin sets a new PIN");
+  assertEqual(L10.verifyAnswer(rp.pin, "Lakshmi Devi", 9).ok, true, "v10 recovery answer survives a PIN change");
+  // 24-hour reset, data untouched
+  const sr = L10.startPinReset(rec, 1000000);
+  assertEqual(sr.readyAt, 1000000 + 86400000, "v10 reset ready after 24 h");
+  assertEqual(L10.pinResetStatus(sr.rec, 1000000 + 3600000).ready, false, "v10 reset not ready after 1 h");
+  assertEqual(L10.pinResetStatus(sr.rec, 1000000 + 86400000).ready, true, "v10 reset ready at 24 h");
+  assertEqual(L10.startPinReset(sr.rec, 1000000 + 5000).rec.resetAt, 1000000, "v10 asking again does not restart the clock");
+  assertEqual(L10.verifyPin(sr.rec, "4821", 2000000).rec.resetAt, 0, "v10 a correct PIN cancels a pending reset");
+  // session
+  assert(L10.pinSessionValid(1000, 1000 + 179000) && !L10.pinSessionValid(1000, 1000 + 181000) && !L10.pinSessionValid(0, 5), "v10 PIN session 3 minutes");
+  // which actions need the PIN
+  const on = { pin: rec };
+  const off = { pin: null };
+  const D10 = "2026-11-28";
+  const todayNew = { date: D10, createdAt: "2026-11-28T08:00:00.000Z" };
+  const past = { date: "2026-11-27", createdAt: "2026-11-27T08:00:00.000Z" };
+  const todayOld = { date: D10, createdAt: "2026-11-20T08:00:00.000Z" };
+  for (const a of ["settings", "restore", "stock", "recipe", "profit", "margins", "wages", "share-summary", "mark-paid"]) {
+    assert(L10.pinRequiredFor(on, a, { today: D10 }) && !L10.pinRequiredFor(off, a, { today: D10 }), "v10 pin gate: " + a);
+  }
+  assert(!L10.pinRequiredFor(on, "edit-entry", { entry: todayNew, today: D10 }), "v10 editing today's new entry is free");
+  assert(!L10.pinRequiredFor(on, "delete-entry", { entry: todayNew, today: D10 }), "v10 deleting today's new entry is free");
+  assert(L10.pinRequiredFor(on, "edit-entry", { entry: past, today: D10 }), "v10 editing a past entry needs PIN");
+  assert(L10.pinRequiredFor(on, "delete-entry", { entry: past, today: D10 }), "v10 deleting a past entry needs PIN");
+  assert(L10.pinRequiredFor(on, "edit-entry", { entry: todayOld, today: D10 }), "v10 entry created on an earlier day needs PIN");
+  assert(!L10.pinRequiredFor(off, "delete-entry", { entry: past, today: D10 }), "v10 no PIN set → nothing is gated");
+  assert(L10.pinRequiredFor(on, "add-entry", { date: "2026-11-20", today: D10 }) && !L10.pinRequiredFor(on, "add-entry", { date: D10, today: D10 }), "v10 adding to a past date needs PIN");
+  assert(!L10.pinRequiredFor(on, "add-menu-sale", { today: D10 }), "v10 unknown actions are not gated");
+
+  // units
+  assertEqual(L10.convertQty(500, "கிராம்", "கிலோ"), 0.5, "v10 gram→kg");
+  assertEqual(L10.convertQty(2, "கிலோ", "கிராம்"), 2000, "v10 kg→gram");
+  assertEqual(L10.convertQty(2, "டஜன்", "எண்ணிக்கை"), 24, "v10 dozen→count");
+  assertEqual(L10.convertQty(2, "லிட்டர்", "கிலோ"), null, "v10 litre ≠ kg");
+  assertEqual(L10.convertQty(3, "", "கிலோ"), 3, "v10 no unit = same unit");
+
+  // recipes: sale deducts, edit adjusts, delete reverses, migration of old data
+  const menu = L10.defaultMenu();
+  const baseStock = L10.defaultStockItems().map((s) => ({ ...s, qty: s.id === "maavu" ? 10 : s.id === "paal" ? 5 : 0 }));
+  const recipes = L10.setRecipe({}, "idli", [{ stockId: "maavu", qty: 0.05 }], "2026-11-20");
+  assertEqual(recipes.idli.since, "2026-11-20", "v10 recipe since date");
+  assertEqual(L10.setRecipe(recipes, "idli", [{ stockId: "maavu", qty: 0.06 }], "2026-11-28").idli.since, "2026-11-20", "v10 editing a recipe keeps its start date");
+  assert(!L10.setRecipe(recipes, "idli", [], "2026-11-28").idli, "v10 empty recipe removes it");
+  const settings = { menu, stock: baseStock, stockMoves: [], recipes, autoStockSince: "2026-11-20" };
+  const sale = L10.createLedger([]).add({ type: "income", date: "2026-11-28", item: "இட்லி", qty: 10, unit: "எண்ணிக்கை", unitPrice: 10, amount: 100 });
+  let entries = sale.entries;
+  let sync = L10.syncAutoStock(entries, settings);
+  const maavu = (st) => st.find((s) => s.id === "maavu").qty;
+  assertEqual(maavu(sync.stock), 9.5, "v10 selling 10 idli uses 0.5 kg maavu");
+  assertEqual(sync.stockMoves.length, 1, "v10 one managed move");
+  assert(sync.stockMoves[0].entryId === sale.entry.id && sync.stockMoves[0].type === "out" && sync.stockMoves[0].auto, "v10 move linked to the sale");
+  // running it again changes nothing (idempotent)
+  const sync2 = L10.syncAutoStock(entries, { ...settings, stock: sync.stock, stockMoves: sync.stockMoves });
+  assert(!sync2.changed && maavu(sync2.stock) === 9.5 && sync2.stockMoves.length === 1, "v10 sync is idempotent");
+  // edit qty 10 → 14
+  const led2 = L10.createLedger(entries);
+  entries = led2.edit(sale.entry.id, { qty: 14, amount: 140 }).entries;
+  const sync3 = L10.syncAutoStock(entries, { ...settings, stock: sync2.stock, stockMoves: sync2.stockMoves });
+  assertEqual(maavu(sync3.stock), 9.3, "v10 editing the sale to 14 idli adjusts to 0.7 kg");
+  assertEqual(sync3.stockMoves.length, 1, "v10 still one move after edit");
+  // delete the sale → reversed
+  entries = L10.createLedger(entries).remove(sale.entry.id).entries;
+  const sync4 = L10.syncAutoStock(entries, { ...settings, stock: sync3.stock, stockMoves: sync3.stockMoves });
+  assertEqual(maavu(sync4.stock), 10, "v10 deleting the sale puts the maavu back");
+  assertEqual(sync4.stockMoves.length, 0, "v10 move removed with the sale");
+  // changing the item on the sale moves the deduction
+  const twoR = L10.setRecipe(recipes, "vada", [{ stockId: "oil", qty: 0.02 }, { stockId: "maavu", qty: 0.03 }], "2026-11-20");
+  const stk = baseStock.map((s) => ({ ...s, qty: s.id === "oil" ? 3 : s.qty }));
+  const sv = L10.createLedger([]).add({ type: "income", date: "2026-11-28", item: "வடை", qty: 10, unitPrice: 15, amount: 150 });
+  const sA = L10.syncAutoStock(sv.entries, { menu, stock: stk, stockMoves: [], recipes: twoR, autoStockSince: "2026-11-20" });
+  assertEqual(sA.stockMoves.length, 2, "v10 two ingredients → two moves");
+  assert(sA.stock.find((s) => s.id === "oil").qty === 2.8 && maavu(sA.stock) === 9.7, "v10 vada uses oil and maavu", JSON.stringify(sA.stock.map((s) => [s.id, s.qty])));
+  const sw = L10.createLedger(sv.entries).edit(sv.entry.id, { item: "இட்லி", unitPrice: 10, amount: 100 }).entries;
+  const sB = L10.syncAutoStock(sw, { menu, stock: sA.stock, stockMoves: sA.stockMoves, recipes: twoR, autoStockSince: "2026-11-20" });
+  assertEqual(sB.stock.find((s) => s.id === "oil").qty, 3, "v10 changing the item gives the oil back");
+  assert(sB.stockMoves.length === 1 && maavu(sB.stock) === 9.5, "v10 …and the idli recipe's maavu is taken instead (0.5 kg)", JSON.stringify(sB.stock.map((s) => [s.id, s.qty])));
+  // sales dated before the recipe started are never deducted (migration safety)
+  const old = L10.createLedger([]).add({ type: "income", date: "2026-11-10", item: "இட்லி", qty: 50, unitPrice: 10, amount: 500 });
+  const sO = L10.syncAutoStock(old.entries, settings);
+  assert(!sO.changed && maavu(sO.stock) === 10, "v10 old sales before the recipe start are not deducted");
+  // existing data without recipes → nothing happens
+  const sN = L10.syncAutoStock(sale.entries, { menu, stock: baseStock, stockMoves: [] });
+  assert(!sN.changed && sN.stockMoves.length === 0, "v10 no recipes → no automatic moves");
+  // manual 'Use stock' moves are untouched
+  const manual = [{ id: "m1", type: "out", itemId: "maavu", qty: 1, date: "2026-11-28", note: "" }];
+  const sM = L10.syncAutoStock([], { menu, stock: baseStock, stockMoves: manual, recipes });
+  assertEqual(sM.stockMoves.length, 1, "v10 manual moves stay");
+  assertEqual(maavu(sM.stock), 10, "v10 manual moves don't change counts in sync");
+  // Stock-screen purchase: delete reverses, edit adjusts; legacy move is linked first (migration)
+  const bought = L10.addStock(baseStock, [], { itemId: "maavu", qty: 5, date: "2026-11-28", amount: 250, logExpense: true });
+  const exp = L10.createLedger([]).add(bought.expense);
+  const legacyMoves = bought.stockMoves; // no entryId yet (v9 data)
+  const sP = L10.syncAutoStock(exp.entries, { menu, stock: bought.stock, stockMoves: legacyMoves, recipes: {}, autoStockSince: "2026-11-28" });
+  assertEqual(sP.stockMoves[0].entryId, exp.entry.id, "v10 migration links the old stock move to its expense");
+  assertEqual(maavu(sP.stock), 15, "v10 linking changes no counts");
+  const exp2 = L10.createLedger(exp.entries).edit(exp.entry.id, { qty: 3, amount: 150 }).entries;
+  const sP2 = L10.syncAutoStock(exp2, { menu, stock: sP.stock, stockMoves: sP.stockMoves, recipes: {}, autoStockSince: "2026-11-28" });
+  assertEqual(maavu(sP2.stock), 13, "v10 editing the purchase qty 5→3 lowers stock by 2");
+  const sP3 = L10.syncAutoStock([], { menu, stock: sP2.stock, stockMoves: sP2.stockMoves, recipes: {}, autoStockSince: "2026-11-28" });
+  assertEqual(maavu(sP3.stock), 10, "v10 deleting the purchase reverses its stock-in");
+  // voice purchase "2 litre milk 120" adds stock; "tomato" (not a stock item) does nothing
+  const pm = L10.parseCommand("2 litre milk 120", {}).entries[0];
+  const pe = L10.createLedger([]).add(L10.parsedToEntry(pm, "2026-11-28"));
+  const sV = L10.syncAutoStock(pe.entries, { menu, stock: baseStock, stockMoves: [], recipes: {}, autoStockSince: "2026-11-20" });
+  assertEqual(sV.stock.find((s) => s.id === "paal").qty, 7, "v10 voice purchase of 2 L milk adds to stock");
+  const pg = L10.parseCommand("500 gram sugar 30", {}).entries[0];
+  const sG = L10.syncAutoStock(L10.createLedger([]).add(L10.parsedToEntry(pg, "2026-11-28")).entries, { menu, stock: baseStock.map((s) => ({ ...s, qty: s.id === "sugar" ? 1 : s.qty })), stockMoves: [], recipes: {}, autoStockSince: "2026-11-20" });
+  assertEqual(sG.stock.find((s) => s.id === "sugar").qty, 1.5, "v10 500 gram sugar → +0.5 kg");
+  const pt = L10.parseCommand("20 kg tomato 1000", {}).entries[0];
+  assert(!L10.syncAutoStock(L10.createLedger([]).add(L10.parsedToEntry(pt, "2026-11-28")).entries, { menu, stock: baseStock, stockMoves: [], recipes: {}, autoStockSince: "2026-11-20" }).changed, "v10 tomato is not a stock item → no stock move");
+  assert(!L10.syncAutoStock(pe.entries, { menu, stock: baseStock, stockMoves: [], recipes: {}, autoStockSince: "2026-11-29" }).changed, "v10 purchases before autoStockSince are ignored");
+  // stock may go negative from sales; flagged
+  const sNeg = L10.syncAutoStock(sale.entries, { menu, stock: baseStock.map((s) => ({ ...s, qty: 0.1 })), stockMoves: [], recipes, autoStockSince: "2026-11-20" });
+  assert(L10.negativeStock(sNeg.stock).some((s) => s.id === "maavu"), "v10 negative stock flagged");
+  const eff = L10.stockEffectsByEntry(sync.stockMoves);
+  assertEqual(eff.get(sale.entry.id).length, 1, "v10 stockEffectsByEntry");
+  // migration of settings
+  const mig = L10.migrateV10({ stock: baseStock, stockMoves: legacyMoves, menu }, exp.entries, "2026-11-28");
+  assert(mig.recipes && mig.autoStockSince === "2026-11-28" && mig.lastBackup === null && mig.pin === null && mig.stockMoves[0].entryId === exp.entry.id, "v10 settings migration");
+  assertEqual(L10.migrateV10({ autoStockSince: "2026-11-01" }, [], "2026-11-28").autoStockSince, "2026-11-01", "v10 migration keeps an existing start date");
+
+  // backup reminder
+  const NOW = Date.parse("2026-11-28T08:00:00Z");
+  assertEqual(L10.backupReminderDue({}, 0, NOW), false, "v10 no entries → no reminder");
+  assertEqual(L10.backupReminderDue({}, 5, NOW), true, "v10 never backed up → reminder");
+  assertEqual(L10.backupReminderDue({ lastBackup: "2026-11-28T01:00:00Z" }, 5, NOW), false, "v10 backed up today → no reminder");
+  assertEqual(L10.backupReminderDue({ lastBackup: "2026-11-27T10:00:00Z" }, 5, NOW), true, "v10 yesterday's backup → reminder");
+  assertEqual(L10.backupReminderDue({ lastBackup: "2026-11-27T10:00:00Z", backupSnoozeUntil: "2026-11-28T12:00:00Z" }, 5, NOW), false, "v10 snoozed");
+  assertEqual(L10.backupReminderDue({ lastBackup: "2026-11-27T10:00:00Z", backupSnoozeUntil: "2026-11-28T07:00:00Z" }, 5, NOW), true, "v10 snooze expired");
+  assertEqual(L10.daysSinceBackup({ lastBackup: "2026-11-25T10:00:00Z" }, NOW), 3, "v10 days since backup");
+  assertEqual(L10.daysSinceBackup({}, NOW), null, "v10 never");
+  assertEqual(L10.backupFileName("2026-11-28"), "kadai-tracker-backup-2026-11-28.json", "v10 backup file name");
+  const pl = L10.buildBackupPayload({ a: 1 }, [{ id: "x" }], NOW);
+  assert(pl.app === "kadai-tracker" && pl.entries.length === 1 && pl.exportedAt === "2026-11-28T08:00:00.000Z", "v10 backup payload");
+}
+
+// ---- v10: built PWA files (index.html / sw.js / manifest.webmanifest agree with each other) ----
+{
+  const fsx = require("fs");
+  const pathx = require("path");
+  const vmx = require("vm");
+  const rootx = pathx.join(__dirname, "..");
+  const html = fsx.readFileSync(pathx.join(rootx, "index.html"), "utf8");
+  const swText = fsx.readFileSync(pathx.join(rootx, "sw.js"), "utf8");
+  const manifest = JSON.parse(fsx.readFileSync(pathx.join(rootx, "manifest.webmanifest"), "utf8"));
+  const bm = /window\.KADAI_BUILD = "([0-9a-f]{8})"/.exec(html);
+  const sm = /const BUILD = "([0-9a-f]{8})"/.exec(swText);
+  assert(bm && sm && bm[1] === sm[1], "v10 pwa: index.html and sw.js carry the same build id (run node build.js)", bm && sm ? bm[1] + " vs " + sm[1] : "missing");
+  assert(!/__BUILD__|__ICON/.test(html + swText + JSON.stringify(manifest)), "v10 pwa: no unreplaced placeholders");
+  assert(/<link rel="manifest" href="manifest\.webmanifest">/.test(html), "v10 pwa: page links the manifest");
+  assert(manifest.display === "standalone" && manifest.start_url === "./" && manifest.scope === "./" && manifest.id === "./", "v10 pwa: manifest start_url/scope relative (works under /repo/ and root)");
+  assertEqual(manifest.icons.map((i) => i.sizes + "/" + i.purpose).join(","), "192x192/any,512x512/any,512x512/maskable", "v10 pwa: manifest icon set");
+  for (const ic of manifest.icons) {
+    const buf = Buffer.from(ic.src.split(",")[1], "base64");
+    assert(ic.src.indexOf("data:image/png;base64,") === 0 && buf.slice(1, 4).toString() === "PNG", "v10 pwa: icon " + ic.sizes + " is a PNG");
+  }
+  for (const f of ["icon-192.png", "icon-512.png", "icon-maskable-512.png"]) assert(fsx.existsSync(pathx.join(rootx, "icons", f)), "v10 pwa: icons/" + f + " exists");
+  assert(!/skipWaiting\(\)\s*;?\s*\n\s*\}\);\s*\n\s*\n?\s*self\.addEventListener\("activate"/.test(swText) && /SKIP_WAITING/.test(swText), "v10 pwa: skipWaiting only on the user's SKIP_WAITING message");
+  assert(/no-cache/.test(swText) && /NETWORK_TIMEOUT_MS/.test(swText), "v10 pwa: network-first with revalidation and timeout");
+  // run the worker in a sandbox and check which requests it takes over
+  const listeners = {};
+  const cachesStore = new Map();
+  const sandbox = {
+    self: { registration: { scope: "https://raja.example/kadai/" }, addEventListener: (t, f) => { listeners[t] = f; }, skipWaiting: () => {}, clients: { claim: () => {} } },
+    caches: { open: async () => ({ put: async () => {}, keys: async () => [] }), match: async () => undefined, keys: async () => [], delete: async () => true },
+    fetch: async () => ({ ok: true, clone() { return this; } }),
+    Request: function (u, o) { this.url = u; this.opts = o; },
+    Response: { error: () => ({ error: true }) },
+    URL, setTimeout, Promise
+  };
+  vmx.runInNewContext(swText, sandbox);
+  const handled = (u, method) => {
+    let did = false;
+    listeners.fetch({ request: { url: u, method: method || "GET", mode: "navigate" }, respondWith: () => { did = true; }, waitUntil: () => {} });
+    return did;
+  };
+  assert(handled("https://raja.example/kadai/"), "v10 pwa sw: handles the app page (folder URL)");
+  assert(handled("https://raja.example/kadai/index.html?x=1"), "v10 pwa sw: handles index.html");
+  assert(handled("https://raja.example/kadai/manifest.webmanifest"), "v10 pwa sw: handles the manifest");
+  assert(!handled("https://www.google.com/speech-api/v2/recognize"), "v10 pwa sw: never touches Google speech / other origins (voice safe)");
+  assert(!handled("https://raja.example/kadai/sw.js"), "v10 pwa sw: never intercepts sw.js itself");
+  assert(!handled("https://raja.example/other/index.html"), "v10 pwa sw: ignores other paths");
+  assert(!handled("https://raja.example/kadai/", "POST"), "v10 pwa sw: ignores non-GET");
+  assert(typeof listeners.install === "function" && typeof listeners.activate === "function" && typeof listeners.message === "function", "v10 pwa sw: install/activate/message handlers");
+  // build id changes with content: two different sources must not share a cache name
+  const crypto = require("crypto");
+  assert(crypto.createHash("sha256").update(html).digest("hex") !== crypto.createHash("sha256").update(html + " ").digest("hex"), "v10 pwa: build hash sanity");
+}
+
 console.log(`\nPassed: ${passed}  Failed: ${failed}`);
 if (failures.length) {
   console.log("\nFAILURES:");

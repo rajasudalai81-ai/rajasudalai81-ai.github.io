@@ -1,4 +1,4 @@
-# Kadai Tracker – Project Handoff (Nov 23, 2026) — v9 (voice fix)
+# Kadai Tracker – Project Handoff (Nov 28, 2026) — v10 (owner PIN, offline app, automatic stock, backup reminder)
 
 ## What this is
 A Tamil-first (bilingual Tamil + English) sales and expense tracker web app for a family roadside idli/dosa/tea stall in the Mumbai area. Users are family members and workers who are not tech-savvy, on Android phones. Main problem it solves: at end of day nobody knows the clear total sales.
@@ -8,14 +8,15 @@ Typed input is the primary, most reliable path. Voice is a secondary extra and t
 ## Files
 - `logic.js`, `app.js`, `index.src.html`, `i18n.js` — **single source**. Change these, then run `node build.js`.
 - `i18n.js` (v7) — Hindi + Marathi UI text, keyed by the English string used in `app.js` (`P/H/S/TL` helpers) and in the static `.en` spans of `index.src.html`. A unit test fails if any English key lacks `hi` or `mr`.
-- `build.js` — inlines `i18n.js`, `logic.js` and `app.js` into `index.src.html` once and writes `index.html`. Uses string slice (not `String.replace`) so `$&` inside `logic.js` is not corrupted.
+- `build.js` — inlines `i18n.js`, `logic.js` and `app.js` into `index.src.html` and writes `index.html`; **v10:** also writes `sw.js` (from `sw.src.js`) and `manifest.webmanifest` (from `manifest.src.json`), stamps one 8-hex build id into all of them and inlines the icons as `data:` URIs. Uses string slice (not `String.replace`) so `$&` inside `logic.js` is not corrupted.
 - `index.html` — the full app in ONE file. Open it in Chrome; nothing else needed. Do not edit the inlined scripts by hand.
-- `tests/` — unit tests (`node tests/run.js`) and a headless Chrome UI smoke test (`node tests/ui-smoke.js`).
+- `tests/` — unit tests (`node tests/run.js`) and a headless Chrome UI smoke test (`node tests/ui-smoke.js`, which also runs `tests/ui-v10.js`).
+- `sw.src.js`, `manifest.src.json`, `icons/*.png`, `tools/make-icons.py` — v10 PWA sources (`python3 tools/make-icons.py` regenerates the PNG icons; needs Pillow).
 - `kadai-tracker-full.zip` — project zip (Python `zipfile`; the `zip` CLI is not available). Does not include `DEPLOY.json` (claim tokens) or `shot-*.png` (sample-data screenshots only, not shipped).
 - Data stays compatible with localStorage key `kadai-tracker-v3` (settings: `kadai-tracker-settings-v3`). Older entries without `payMode` still load as cash. Shop data (stock, staff, wages, stock moves, menu `costPrice`) is stored inside settings. If this phone already ran Raja’s Phase 2 HTML, stock/staff are migrated from `kadai-tracker-stock-v2` / `kadai-tracker-staff-v2`.
 
-## Live link (permanent, v9)
-**https://rajasudalai81-ai.github.io/** — GitHub Pages, repo `rajasudalai81-ai/rajasudalai81-ai.github.io`, branch `main`, files `index.html` + `.nojekyll`. **v9 (voice fix) pushed 23 Nov 2026, 9:48 AM IST (commit `4ccdc99`)**; live file byte-identical to the local build (`cmp`), UI smoke test passed against the live URL. v8 pushed 19 Nov 2026 (commit `4bbe488`)**; the live file was byte-identical to the local build (`cmp`) and the UI smoke test passed against the live URL. v7 was pushed 18 Nov 2026 (commit `e94768e`); the live file was byte-identical to the local build (`cmp`) and the UI smoke test passed against the live URL. To update: `node build.js`, then push `index.html` to that repo (GitHub connector `push_files`).
+## Live link (permanent, v10)
+**https://rajasudalai81-ai.github.io/** — GitHub Pages, repo `rajasudalai81-ai/rajasudalai81-ai.github.io`, branch `main`, root files `index.html`, `sw.js`, `manifest.webmanifest`, `.nojekyll`, `README.md` + `source/`. **v10 pushed 28 Nov 2026 (IST)** — live files byte-identical to the local build (`cmp`), smoke test passed against the live URL (see the GitHub commit list for SHAs). To update: `node build.js`, then push `index.html`, `sw.js`, `manifest.webmanifest` (and `source/` copies) with the GitHub connector `push_files`; the build id changes automatically so phones get the update banner. **v9 (voice fix) pushed 23 Nov 2026, 9:48 AM IST (commit `4ccdc99`)**; live file byte-identical to the local build (`cmp`), UI smoke test passed against the live URL. v8 pushed 19 Nov 2026 (commit `4bbe488`)**; the live file was byte-identical to the local build (`cmp`) and the UI smoke test passed against the live URL. v7 was pushed 18 Nov 2026 (commit `e94768e`); the live file was byte-identical to the local build (`cmp`) and the UI smoke test passed against the live URL. To update: `node build.js`, then push `index.html` to that repo (GitHub connector `push_files`).
 
 ## Older live links (ship.page, temporary hosting)
 - v1: https://utopian-house-l98o3.ship.place/ (claimed on Raja's ship.page account, older version). Updating this same slug needs a ship.page API key (`sp_...`); without it, POST `/deploy/utopian-house-l98o3` returns HTTP 401 `auth_required`.
@@ -26,7 +27,7 @@ Typed input is the primary, most reliable path. Voice is a secondary extra and t
 - v5 font-fix drop: https://cotton-option-jyemt.ship.place/ — deployed 18 Nov 2026, 12:05 PM IST. Expires 25 Nov 2026, 12:05 PM IST (Asia/Calcutta) unless claimed.
 - **v6 (latest — paired spend/earn phrases, minimized Today UI, inline SVG tiles):** https://lacy-taurus-haq94.ship.place/ — deployed 18 Nov 2026, 12:29 PM IST (Asia/Calcutta). Expires **25 Nov 2026, 12:29 PM IST (Asia/Calcutta)** unless claimed. New anonymous drop because no ship.page API key was available (same-slug update of the claimed v1 still returns 401).
 
-The v6 ship.page claim URL (it contained a private claim token) is not included in this published copy. Claim details stay only in the local `DEPLOY.json`, which is not in this repository.
+Claim URL: (removed from the published copy — kept by Raja only)
 
 ## Screenshots (v6, 390×844, sample data only — not in the zip)
 Taken 18 Nov 2026, 12:29 PM IST (Asia/Calcutta). Sample entries and stock quantities were seeded only in the headless browser; they are not shipped in `index.html`. Tamil is clean and readable (weights ≤ 700, no Oi blobs). Menu and tab icons are inline SVGs, not emoji.
@@ -34,6 +35,35 @@ Taken 18 Nov 2026, 12:29 PM IST (Asia/Calcutta). Sample entries and stock quanti
 - Voice confirmation for a paired deal `30 kazhi 50 varudhu`, showing செலவு ₹30, வரவு ₹50, **லாபம் ₹20**, and the big green ✓ சேமி button: `/workspace/kadai-tracker/shot-voice-confirm.png`
 - Shop tab (Stock / Margins / Staff, stock list with மாவு 12 and பால் 6): `/workspace/kadai-tracker/shot-shop.png`
 
+
+## v10 (Nov 28, 2026) — owner PIN, offline app, automatic stock, backup reminder
+Built from the two AI audits Raja approved (no PIN, no PWA, stock not auto-deducted, manual backup). All v9 features unchanged; Tamil-first UI with English under everything, Hindi + Marathi for every new string.
+
+**1. Owner PIN (Settings → Owner PIN).** Optional 4-digit PIN. When on, these ask for it: Settings, backup restore, changing stock (add / use / new item), editing recipes, seeing profit (Today profit tile and Summary show `₹ ••••` and tap-to-unlock), Shop → Margins and Staff/wages (replaced by a lock card), sharing the day summary to WhatsApp (it contains profit), marking credit paid, **editing/deleting past entries** and **adding entries to a past date**. Not needed: today's own new entries (dated today *and* created today) — add, edit, delete, undo, quantity +/−, voice and typing all stay free. Unlock lasts 3 minutes of use (sliding), the 🔒 header button locks at once, and the app locks again if it was in the background for more than a minute.
+- Storage: `settings.pin` = `{salt, hash, iter, q, qSalt, qHash, failCount, lockUntil, resetAt}`; salted, iterated (2000×) SHA-256 in pure JS (verified against Node `crypto` in tests; works on plain http too). The PIN and the recovery answer are never stored in plain text.
+- Wrong tries: 5 free, then the pad locks for 30 s, doubling each round up to 15 min.
+- **Forgot PIN (no data is ever lost):** (a) answer the recovery question chosen when the PIN was set (4 questions, 4 languages) → choose a new PIN; (b) no answer → "Start the 24-hour wait" (warning screen says entries/stock/settings are kept); after 24 h the PIN can be removed. A correct PIN cancels a pending reset. Restoring a backup keeps this phone's own PIN.
+- The language buttons are on the PIN screen shown for Settings, so a worker can still change language while locked.
+- **Honest limit:** it is a deterrent for family/workers, not bank security. Everything lives in `localStorage` on the phone; someone with Chrome devtools / a rooted phone can read or edit it, and "clear site data" wipes the app *and* the PIN (that is why the backup reminder exists).
+
+**2. Installable offline app (PWA).** `manifest.webmanifest` (standalone, `start_url`/`scope` `./` so it works under the GitHub Pages root), icons 192, 512 and maskable 512, `sw.js`.
+- Service worker is **network-first**: only same-origin GETs of the app page (folder URL / `index.html`) and `manifest.webmanifest` are handled; every request is revalidated (`cache: "no-cache"`), 4 s timeout, then the saved copy is used (offline). Everything else — Google speech, other origins, `sw.js` itself — is never touched, so voice cannot be broken by the worker (unit test runs the worker in a sandbox and checks this).
+- Never stale forever: cache name is `kadai-<build>` where the build id is a hash of everything that ships; old `kadai-*` caches are deleted on activate; no `skipWaiting` on install. When a new version is installed behind a running page (or the page's own build-id check sees a different build) a green banner says **"புதிய பதிப்பு தயார் — தட்டி புதுப்பிக்கவும் / Update available — tap to refresh"**; tapping sends `SKIP_WAITING` and reloads once. Page checks for updates on open, when the app returns to the foreground and every 30 min.
+- Install banner from Chrome's `beforeinstallprompt` (dismiss remembered 7 days; hidden while the backup banner is showing so the screen stays free).
+- Icons are also **inlined as `data:` URIs** in the manifest and `<link rel=icon>` because the GitHub push tool cannot upload binary files; the real PNGs are in `icons/` in the zip/local folder (`python3 tools/make-icons.py`).
+- Root files on the site: `index.html`, `sw.js`, `manifest.webmanifest`, `.nojekyll`, `README.md`, `source/`.
+
+**3. Stock auto-deduct (Shop → செய்முறை / Recipes).** Per menu item: ingredient + quantity per one item sold (kg items can be entered in gram, litre in ml). Stored in `settings.recipes = {menuId: {since, lines:[{stockId, qty}]}}` (qty in the stock item's base unit).
+- Selling deducts; the Today row shows "🥣 மாவு −0.05 கிலோ". `L.syncAutoStock` **reconciles** all managed stock moves (those with `entryId` + `auto:true`) against the entries after every save, so add, edit, quantity +/−, delete, **undo**, restore and unit changes all stay consistent and a reload never double-counts. Manual "Use stock" moves are never touched.
+- Purchases: voice/typed expenses naming a stock item with a compatible unit (kg↔gram, dozen→count; aliases such as maavu/flour/atta, milk, sugar, tea powder, oil, gas) add stock; deleting/editing the expense reverses/adjusts. Expenses created from the stock screen are linked to their stock move (`entry.stockMoveId`), so deleting that expense also removes the stock-in.
+- **Migration:** `L.migrateV10` on load adds `recipes:{}`, `autoStockSince` (= day of first v10 launch), `lastBackup`, `backupSnoozeUntil`, `pin:null`. Old sales are never deducted retroactively: a recipe counts only sales dated on/after its `since` (the day it was first saved; editing keeps it), purchases only on/after `autoStockSince`. Existing stock counts are not rewritten.
+- Stock can go negative (shown red with "add your real stock") — sales never get blocked.
+
+**4. Backup safety.** Daily banner (not backed up *today*, there is data; "Later" snoozes 4 h) → **one tap** builds the backup JSON and uses the Web Share API with a file (WhatsApp / Drive / Gmail on Chrome Android); if sharing is unavailable it downloads. Closing the share sheet does not count as a backup. `settings.lastBackup` (ISO) is shown in Settings ("கடைசி காப்பு / Last backup", Asia/Kolkata) with buttons "Share or save backup" and the old "Download backup". Backup file version is 5 (includes recipes/last backup; the PIN hash is part of settings in the file).
+
+**Tests (v10).** `node tests/run.js` → 1907 checks (1636 old + v10 logic, i18n completeness for every new string, SW/manifest consistency, SW sandbox). `node tests/ui-smoke.js` → old flows + `tests/ui-v10.js`: PIN (set, mismatch, wrong/right PIN, gating of settings/stock/recipes/restore/margins/wages/past entries, language on PIN screen, recovery answer, lockout, 24 h reset, turn off), recipes (deduct, qty edit, delete, undo, purchase, reload idempotence, migration), backup (banner, share file, AbortError, download fallback, last-backup line), PWA (manifest + PNG icons, SW registered, cache named by build, offline reload + offline entry, install banner, update banner with a bumped build served by the test server, tap → new build + old cache deleted, network-first on reload; against the live URL it checks `sw.js`/manifest instead), Hindi screens free of Tamil.
+
+**Known limits (v10).** 4-digit PIN = deterrent only (see above). SW needs https (GitHub Pages is) and a first online visit; iPhone Safari has no install banner (Share → Add to Home Screen) and no file Web Share on old iOS. Web Share with a file works on Chrome Android only. Auto-in only for expenses whose item name matches a stock item. A recipe needs a stock item with a known unit; units must be of the same family. No cloud sync yet — the backup file is the only copy off the phone.
 
 ## v9 voice fix (Nov 23, 2026)
 Raja: “VOICE WORK AGA MATUKU” — voice stopped working on his Android Chrome after v8.

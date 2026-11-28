@@ -63,6 +63,13 @@ One sentence can record both a spend and a sale (for example "30 ruva kazhi 50 v
 - Voice is SpeechRecognition only again (v8's extra getUserMedia meter stream took the mic on Android). Meter removed; optional sound pulse (off by default) uses recognition events only; old settings migrated once to meter off + tap mode.
 - Visible listening / hearing state, “Heard:” text, bilingual message with fix steps for every mic error, permission-safe timers, try/catch around start.
 
+## v10 (28 Nov 2026)
+- **Owner PIN** (Settings → Owner PIN): optional 4-digit PIN (salted hash, never plain text). Needed for past-entry edit/delete, stock changes, recipes, profit / margins / wages, Settings and backup restore; today's own new entries stay free. Forgot PIN → recovery question, or a 24-hour wait that keeps all data.
+- **Offline installable app**: `manifest.webmanifest`, icons, `sw.js` (network-first, never touches voice, cache named per build). New versions show "Update available — tap to refresh".
+- **Automatic stock**: Shop → Recipes sets ingredient per item sold; sales deduct, edits/deletes/undo reverse; migration keeps old data.
+- **Backup safety**: daily reminder, one-tap share (WhatsApp / Drive) or download, last backup date in Settings.
+- Build: `python3 tools/make-icons.py` (once, needs Pillow) then `node build.js` → `index.html`, `sw.js`, `manifest.webmanifest`.
+
 ## Tests
 
     node tests/run.js

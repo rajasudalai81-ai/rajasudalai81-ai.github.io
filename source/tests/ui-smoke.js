@@ -39,16 +39,23 @@ async function pickFirstLang(page, lang) {
 }
 
 const root = path.join(__dirname, "..");
+const bump = { id: null }; // v10: serve a different build id to test the "update available" banner
 const server = http.createServer((req, res) => {
-  const file = req.url === "/" ? "/index.html" : req.url;
+  const reqPath = req.url.split("?")[0];
+  const file = reqPath === "/" ? "/index.html" : reqPath;
   const p = path.join(root, path.normalize(file).replace(/^\/+/, ""));
   if (!p.startsWith(root)) { res.writeHead(403); res.end(); return; }
   fs.readFile(p, (err, data) => {
     if (err) { res.writeHead(404); res.end("no"); return; }
     const ext = path.extname(p);
-    const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8" };
-    res.writeHead(200, { "content-type": types[ext] || "text/plain" });
-    res.end(data);
+    const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".webmanifest": "application/manifest+json", ".png": "image/png", ".json": "application/json" };
+    let body = data;
+    if (bump.id && (file === "/index.html" || file === "/sw.js")) {
+      const real = /KADAI_BUILD = "([0-9a-f]{8})"/.exec(fs.readFileSync(path.join(root, "index.html"), "utf8"));
+      body = Buffer.from(data.toString("utf8").split(real[1]).join(bump.id));
+    }
+    res.writeHead(200, { "content-type": types[ext] || "text/plain", "cache-control": "no-cache" });
+    res.end(body);
   });
 });
 
@@ -63,6 +70,7 @@ const server = http.createServer((req, res) => {
     args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
   });
   const page = await browser.newPage();
+  global.__page = page;
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   page.setDefaultTimeout(8000);
   page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
@@ -905,6 +913,8 @@ const server = http.createServer((req, res) => {
   await vp.waitForFunction((m) => document.getElementById("totIncome").textContent.trim() !== m, { timeout: 8000 }, incH2);
   assert(vErrors.length === 0, "v9 no JS errors on the voice page: " + vErrors.join(" | "));
   await vp.close();
+
+  await require("./ui-v10").run({ browser, url, assert, SHOTS, root, LIVE_URL, bump });
 
   await browser.close();
   server.close();
