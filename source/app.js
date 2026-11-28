@@ -121,7 +121,8 @@
   const state = {
     date: L.todayISO(),
     entries: [],
-    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", micPulse: false, voiceFixV9: true },
+    settings: { shopName: "இட்லி தோசை டீ கடை", menu: L.defaultMenu(), voiceLang: "ta-IN", lang: null, stock: L.defaultStockItems(), staff: [], wages: [], stockMoves: [], voiceMode: "tap", micPulse: false, voiceFixV9: true, recipes: {}, autoStockSince: null, lastBackup: null, backupSnoozeUntil: null, pin: null },
+    pinUnlockedAt: 0,
     personFilter: "",
     pendingCalc: null,
     finalAlts: [],
@@ -182,9 +183,17 @@
       // v9: one-time reset — v8's mic meter (getUserMedia) broke voice on Android; meter off, tap mode.
       voiceMode: parsed && parsed.voiceFixV9 && parsed.voiceMode === "hold" ? "hold" : "tap",
       micPulse: !!(parsed && parsed.voiceFixV9 && parsed.micPulse === true),
-      voiceFixV9: true
+      voiceFixV9: true,
+      recipes: parsed && parsed.recipes,
+      autoStockSince: parsed && parsed.autoStockSince,
+      lastBackup: parsed && parsed.lastBackup,
+      backupSnoozeUntil: parsed && parsed.backupSnoozeUntil,
+      pin: parsed && parsed.pin
     };
     if (parsed && !parsed.voiceFixV9) state.settingsMigrated = true;
+    // v10: fill in recipes / auto-stock start day / backup fields / PIN (never touches entries)
+    if (!parsed || !parsed.autoStockSince || !parsed.recipes) state.settingsMigrated = true;
+    state.settings = L.migrateV10(state.settings, state.entries, L.todayISO());
   }
 
   function normalizeVoiceLang(v, lang) {
@@ -209,7 +218,16 @@
     } catch (e) { /* keep defaults */ }
   }
 
+  /** Reconcile the automatic stock moves with the current entries (idempotent). */
+  function syncStock() {
+    try {
+      const r = L.syncAutoStock(state.entries, state.settings);
+      if (r.changed) { state.settings.stock = r.stock; state.settings.stockMoves = r.stockMoves; }
+    } catch (e) { /* never block saving an entry because of stock maths */ }
+  }
+
   function saveStore() {
+    syncStock();
     localStorage.setItem(STORE_KEY, JSON.stringify(state.entries));
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
   }
@@ -373,9 +391,10 @@
     document.getElementById("totIncome").textContent = formatMoney(t.income);
     document.getElementById("totExpense").textContent = formatMoney(t.expense);
     const profitEl = document.getElementById("totProfit");
-    profitEl.textContent = formatMoney(t.profit);
+    profitEl.textContent = profitText(t.profit);
     const card = profitEl.closest(".tot");
-    card.classList.toggle("neg", t.profit < 0);
+    card.classList.toggle("neg", !profitHidden() && t.profit < 0);
+    card.classList.toggle("masked", profitHidden());
 
     const pay = L.paymentBreakdown(state.entries, state.date);
     document.getElementById("payLine").innerHTML =
@@ -411,6 +430,9 @@
     renderList();
     renderKadan();
     renderSummary();
+    renderBanners();
+    renderBackupSettings();
+    renderPinSettings();
   }
 
   function renderMenu() {
@@ -452,8 +474,13 @@
       box.innerHTML = '<div class="empty">' + H("இன்று இன்னும் பதிவே இல்லை. மேலே பேசவும், தட்டச்சு செய்யவும், அல்லது மெனுவைத் தட்டவும்.", "No entries yet today. Speak, type, or tap a menu picture above.") + "</div>";
       return;
     }
+    const fxMap = L.stockEffectsByEntry(state.settings.stockMoves);
     box.innerHTML = list.map((e) => {
       const signClass = e.type === "income" ? "in" : "ex";
+      const fx = (fxMap.get(e.id) || []).map((m) => {
+        const si = (state.settings.stock || []).find((x) => x.id === m.itemId);
+        return si ? `<span class="meta stock-fx">🥣 ${escapeHtml(stockName(si))} ${m.type === "out" ? "−" : "+"}${escapeHtml(String(m.qty))} ${escapeHtml(unitName(si.unit))}</span>` : "";
+      }).join("");
       const kind = e.type === "income" ? TL("வரவு", "In") : TL("செலவு", "Ex");
       const pm = L.payModeOf(e);
       const pay = `<span class="pay ${pm}">${TL(PAY_LABEL[pm].ta, PAY_LABEL[pm].en)}</span>`;
@@ -482,7 +509,7 @@
           <div class="row-top">
             <span class="kind">${kind}</span>${pay}${adj}
           </div>
-          <div class="row-meta">${qtyBit}${calcBit}${veh}${cust}${note}</div>
+          <div class="row-meta">${qtyBit}${calcBit}${veh}${cust}${note}${fx}</div>
         </div>
         <div class="amt">${formatMoney(e.amount)}</div>
         <div class="row-actions">
@@ -561,7 +588,7 @@
       <div class="pay-line" style="margin-top:10px">
         <span>${TL("வரவு", "In")} ${formatMoney(t.income)}</span>
         <span>${TL("செலவு", "Ex")} ${formatMoney(t.expense)}</span>
-        <span>${TL("லாபம்", "Profit")} ${formatMoney(t.profit)}</span>
+        <span>${TL("லாபம்", "Profit")} ${profitText(t.profit)}</span>
       </div>`;
   }
 
@@ -574,7 +601,7 @@
        <p style="font-weight:700;margin:10px 0 6px">${escapeHtml(shopTitle())}</p>
        <div>${TL("வரவு", "Income")}: <strong>${formatMoney(t.income)}</strong></div>
        <div>${TL("செலவு", "Expense")}: <strong>${formatMoney(t.expense)}</strong></div>
-       <div>${TL("லாபம்", "Profit")}: <strong>${formatMoney(t.profit)}</strong></div>
+       <div>${TL("லாபம்", "Profit")}: <strong>${profitText(t.profit)}</strong></div>
        <div class="pay-line">
          <span>${TL("ரொக்கம்", "Cash")} ${formatMoney(pay.cash)}</span>
          <span>UPI ${formatMoney(pay.upi)}</span>
@@ -618,6 +645,7 @@
   }
 
   function addMenuSale(menuId, qtyOverride) {
+    if (gated("add-entry", { date: state.date }, () => addMenuSale(menuId, qtyOverride), "addPast")) return;
     const m = (state.settings.menu || []).find((x) => x.id === menuId);
     if (!m) return;
     const price = Number(m.price);
@@ -704,6 +732,7 @@
   function changeQty(id, delta) {
     const entry = state.entries.find((e) => e.id === id);
     if (!entry || entry.unitPrice == null) return;
+    if (gated("edit-entry", { entry }, () => changeQty(id, delta), "edit")) return;
     const qty = (entry.qty == null ? 1 : Number(entry.qty)) + delta;
     if (qty <= 0) {
       askDelete(id);
@@ -1079,6 +1108,7 @@
     opts = opts || {};
     const raw = String(text || "").trim();
     if (!raw) return false;
+    if (gated("add-entry", { date: state.date }, () => runCommand(text, opts), "addPast")) return false;
     const result = L.parseCommand(raw, { menu: state.settings.menu, speechConfidence: opts.speechConfidence });
     const q = document.getElementById("quickEntry");
     if (result.mathOnly && result.math) {
@@ -1179,6 +1209,7 @@
   function saveCalc(type) {
     const m = state.pendingCalc;
     if (!m) return;
+    if (gated("add-entry", { date: state.date }, () => saveCalc(type), "addPast")) return;
     const amount = Math.abs(Number(m.result));
     const res = ledger().add({ type, date: state.date, item: type === "income" ? "வரவு" : "செலவு", amount, calc: m.text, payMode: "cash" });
     if (!res.ok) { toast(S("பதிவைச் சேமிக்க முடியவில்லை.", "Could not save this entry.")); return; }
@@ -1283,6 +1314,10 @@
 
   /* ---------- Form ---------- */
   function openForm(opts) {
+    if (opts.mode === "edit") {
+      const ent = state.entries.find((x) => x.id === opts.id);
+      if (ent && gated("edit-entry", { entry: ent }, () => openForm(opts), "edit")) return;
+    } else if (gated("add-entry", { date: state.date }, () => openForm(opts), "addPast")) return;
     stopListen(false);
     state.form = opts;
     state.amountManual = false;
@@ -1495,6 +1530,7 @@
   function askDelete(id) {
     const entry = state.entries.find((e) => e.id === id);
     if (!entry) return;
+    if (gated("delete-entry", { entry }, () => askDelete(id), "delete")) return;
     state.pendingDeleteId = id;
     const kind = entry.type === "income" ? S("வரவு", "Income") : S("செலவு", "Expense");
     document.getElementById("modalBody").innerHTML =
@@ -1531,6 +1567,7 @@
   }
 
   function askMarkPaid(name) {
+    if (gated("mark-paid", {}, () => askMarkPaid(name), "paid")) return;
     state.pendingPaidName = name;
     document.getElementById("modalBody").innerHTML =
       `<div class="modal-q"><strong>${escapeHtml(name)}</strong> — ${H("கடன் முழுவதும் செலுத்திவிட்டாரா?", "Mark all of this credit as paid?")}</div>` +
@@ -1551,6 +1588,8 @@
   }
 
   function openSettings() {
+    renderPinSettings();
+    renderBackupSettings();
     document.getElementById("setShopName").value = shopTitle();
     renderMenuEditor();
     document.getElementById("settings").hidden = false;
@@ -1599,12 +1638,16 @@
     document.querySelectorAll("#shopSub [data-shop]").forEach((b) => {
       b.classList.toggle("on", b.getAttribute("data-shop") === section);
     });
+    const locked = (section === "margins" || section === "staff") && L.pinRequiredFor(state.settings, section === "staff" ? "wages" : "margins", {}) && !pinSessionOk();
+    document.getElementById("shopLock").hidden = !locked;
     document.getElementById("shopStock").hidden = section !== "stock";
-    document.getElementById("shopMargins").hidden = section !== "margins";
-    document.getElementById("shopStaff").hidden = section !== "staff";
+    document.getElementById("shopRecipes").hidden = section !== "recipes";
+    document.getElementById("shopMargins").hidden = locked || section !== "margins";
+    document.getElementById("shopStaff").hidden = locked || section !== "staff";
     if (section === "stock") renderStock();
-    if (section === "margins") renderMargins();
-    if (section === "staff") renderStaff();
+    if (section === "recipes") renderRecipes();
+    if (section === "margins" && !locked) renderMargins();
+    if (section === "staff" && !locked) renderStaff();
   }
 
   function renderStock() {
@@ -1622,9 +1665,10 @@
             <strong>${escapeHtml(stockName(s))}</strong>
             ${curLang() !== "en" && s.nameEn && s.nameEn !== stockName(s) ? '<div class="en">' + escapeHtml(s.nameEn) + "</div>" : ""}
             <div class="help">${escapeHtml(S("குறைந்தபட்சம்", "Alert at"))} ${escapeHtml(String(s.minAlert))} ${escapeHtml(unitName(s.unit))}</div>
+            ${Number(s.qty) < 0 ? `<div class="help" style="color:#9B1C1C;font-weight:700">${escapeHtml(S("இருப்பு குறைவாகப் பதிவானது — புதிய இருப்பைச் சேர்க்கவும்", "Sales used more than the counted stock — add your real stock"))}</div>` : ""}
           </div>
           <div style="text-align:right">
-            <span class="badge ${isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(unitName(s.unit))}</span>
+            <span class="badge ${Number(s.qty) < 0 ? "neg" : isLow ? "warn" : "ok"}">${escapeHtml(String(s.qty))} ${escapeHtml(unitName(s.unit))}</span>
           </div>
         </div>`;
       }).join("");
@@ -1966,20 +2010,7 @@
   }
 
   function exportBackup() {
-    const payload = {
-      app: "kadai-tracker",
-      version: 4,
-      exportedAt: new Date().toISOString(),
-      settings: state.settings,
-      entries: state.entries
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "kadai-tracker-backup-" + L.todayISO() + ".json";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast(S("காப்பு கோப்பு பதிவிறக்கம் ஆனது", "Backup downloaded"));
+    backupNow("download");
   }
 
   function importBackup(file) {
@@ -1990,10 +2021,12 @@
         const entries = Array.isArray(data) ? data : data.entries;
         if (!Array.isArray(entries)) throw new Error("bad");
         if (!confirm(curLang() === "en" ? "Restore will replace current entries. Continue?" : P("இறக்குமதி செய்தால் தற்போதைய பதிவுகளின் மேல் எழுதப்படலாம். தொடரவா?", "Restore will replace current entries. Continue?") + "\nRestore will replace current entries. Continue?")) return;
+        const keepPin = state.settings.pin; // the PIN belongs to this phone, not to the backup file
         state.entries = entries;
         if (data.settings) {
           applySettingsObject(data.settings);
         }
+        state.settings.pin = keepPin || null;
         saveStore();
         render();
         closeSettings();
@@ -2017,9 +2050,578 @@
   }
 
   function shareWhatsApp() {
+    if (gated("share-summary", {}, shareWhatsApp, "share")) return;
     const text = L.daySummaryTextLang(state.entries, state.date, shopTitle(), curLang());
     const url = "https://wa.me/?text=" + encodeURIComponent(text);
     window.open(url, "_blank");
+  }
+
+  /* =====================================================================
+   * v10: owner PIN, recipes + automatic stock, backup reminder, PWA update / install
+   * ===================================================================== */
+  const PIN_REASONS = {
+    settings: ["அமைப்புகளைத் திறக்க", "open Settings"],
+    restore: ["காப்பை மீட்டெடுக்க", "restore a backup"],
+    stock: ["இருப்பை மாற்ற", "change stock"],
+    recipe: ["செய்முறையை மாற்ற", "change a recipe"],
+    profit: ["லாபம், கூலி பார்க்க", "see profit and wages"],
+    edit: ["பழைய பதிவைத் திருத்த", "edit a past entry"],
+    "delete": ["பழைய பதிவை நீக்க", "delete a past entry"],
+    addPast: ["பழைய தேதியில் பதிவு சேர்க்க", "add an entry to a past date"],
+    share: ["சுருக்கத்தைப் பகிர (லாபம் உள்ளது)", "share the summary (it shows profit)"],
+    paid: ["கடன் செலுத்தியதாகக் குறிக்க", "mark credit as paid"],
+    pinchange: ["PIN-ஐ மாற்ற", "change the PIN"],
+    pinoff: ["PIN-ஐ நிறுத்த", "turn off the PIN"]
+  };
+  const MASK = "₹ ••••";
+
+  function pinOn() { return L.pinEnabled(state.settings); }
+  function pinSessionOk() { return L.pinSessionValid(state.pinUnlockedAt); }
+  function touchPinSession() {
+    state.pinUnlockedAt = Date.now();
+    clearTimeout(state.pinTimer);
+    state.pinTimer = setTimeout(function relock() {
+      if (L.pinSessionValid(state.pinUnlockedAt)) { state.pinTimer = setTimeout(relock, 5000); return; }
+      state.pinUnlockedAt = 0;
+      render();
+    }, L.PIN_SESSION_MS + 300);
+  }
+  function lockNow() {
+    state.pinUnlockedAt = 0;
+    clearTimeout(state.pinTimer);
+    const st = document.getElementById("settings");
+    if (st && !st.hidden) closeSettings();
+    render();
+    toast(S("பூட்டப்பட்டது 🔒", "Locked 🔒"));
+  }
+  function profitHidden() {
+    return L.pinRequiredFor(state.settings, "profit", {}) && !pinSessionOk();
+  }
+  function profitText(n) {
+    return profitHidden() ? MASK : formatMoney(n);
+  }
+  /** true when the action must wait for the PIN (the PIN pad is opened and `retry` runs after it). */
+  function gated(action, ctx, retry, reasonKey) {
+    if (!L.pinRequiredFor(state.settings, action, ctx || {})) return false;
+    if (pinSessionOk()) { touchPinSession(); return false; }
+    openPin({ kind: "verify", cb: retry, reason: reasonKey || action });
+    return true;
+  }
+  function withPin(action, ctx, fn, reasonKey) {
+    if (!gated(action, ctx, fn, reasonKey)) fn();
+  }
+
+  let pinUi = null;
+  function pinEl(id) { return document.getElementById(id); }
+  function openPin(opts) {
+    pinUi = Object.assign({ kind: "verify", step: "enter", buf: "", first: "", cb: null, reason: "settings", view: "pad" }, opts);
+    if (pinUi.kind === "create" || pinUi.kind === "change" || pinUi.kind === "recover") pinUi.step = "new1";
+    pinEl("pinModal").hidden = false;
+    pinEl("backdrop").hidden = false;
+    pinEl("pinAnswer").value = "";
+    renderPin();
+  }
+  function closePin() {
+    pinEl("pinModal").hidden = true;
+    pinUi = null;
+    const anyOpen = ["sheet", "settings", "confirmCard", "modal"].some((id) => pinEl(id) && !pinEl(id).hidden);
+    if (!anyOpen) pinEl("backdrop").hidden = true;
+  }
+  function fmtWait(ms) {
+    const s = Math.ceil(ms / 1000);
+    if (s < 90) return s + " " + S("விநாடி", "sec");
+    const m = Math.ceil(s / 60);
+    if (m < 120) return m + " " + S("நிமிடம்", "min");
+    const h = Math.floor(m / 60);
+    return h + " " + S("மணி", "h") + " " + (m % 60) + " " + S("நிமிடம்", "min");
+  }
+  function renderPin() {
+    if (!pinUi) return;
+    const u = pinUi;
+    const titles = {
+      enter: H("PIN போடுங்கள்", "Enter PIN"),
+      new1: u.kind === "recover" ? H("புதிய PIN தேர்ந்தெடுங்கள்", "Choose a new PIN") : H("4 இலக்க PIN தேர்ந்தெடுங்கள்", "Choose a 4-digit PIN"),
+      new2: H("PIN-ஐ மீண்டும் போடுங்கள்", "Enter the PIN again")
+    };
+    pinEl("pinTitle").innerHTML = u.view === "forgot" ? H("PIN மீட்பு", "Recover PIN")
+      : u.view === "reset" ? H("PIN நீக்கம்", "Remove PIN")
+      : u.view === "setup" ? H("மீட்புக் கேள்வி", "Recovery question")
+      : titles[u.step];
+    const rk = PIN_REASONS[u.reason];
+    pinEl("pinReason").innerHTML = rk && u.kind === "verify" && u.view === "pad" ? TL("இதற்கு PIN தேவை", "PIN needed to") + ": <strong>" + TL(rk[0], rk[1]) + "</strong>" : "";
+    pinEl("pinViewPad").hidden = u.view !== "pad";
+    pinEl("pinViewForgot").hidden = u.view !== "forgot";
+    pinEl("pinViewReset").hidden = u.view !== "reset";
+    pinEl("pinViewSetup").hidden = u.view !== "setup";
+    pinEl("pinForgot").hidden = !(u.kind === "verify" && u.view === "pad");
+    pinEl("pinLangRow").hidden = !(u.reason === "settings" && u.kind === "verify" && u.view === "pad");
+    document.querySelectorAll("#pinLangRow [data-pinlang]").forEach((b) => b.classList.toggle("on", b.getAttribute("data-pinlang") === curLang()));
+    document.querySelectorAll("#pinDots i").forEach((d, i) => d.classList.toggle("on", i < u.buf.length));
+    if (u.view === "forgot") {
+      const q = L.PIN_QUESTIONS.find((x) => x.id === (state.settings.pin && state.settings.pin.q)) || L.PIN_QUESTIONS[0];
+      pinEl("pinQuestion").textContent = (q[curLang()] || q.en) + (curLang() === "en" ? "" : "  /  " + q.en);
+    }
+    if (u.view === "reset") renderPinReset();
+    if (u.view === "setup") {
+      const sel = pinEl("pinQSel");
+      const keep = sel.value;
+      sel.innerHTML = L.PIN_QUESTIONS.map((q) => `<option value="${q.id}">${escapeHtml((q[curLang()] || q.en) + (curLang() === "en" ? "" : "  /  " + q.en))}</option>`).join("");
+      if (keep) sel.value = keep;
+    }
+  }
+  function pinMsg(html) { pinEl("pinMsg").innerHTML = html || ""; }
+  function pinPress(k) {
+    if (!pinUi || pinUi.view !== "pad") return;
+    if (k === "clear") pinUi.buf = "";
+    else if (k === "back") pinUi.buf = pinUi.buf.slice(0, -1);
+    else if (pinUi.buf.length < 4) pinUi.buf += k;
+    pinMsg("");
+    renderPin();
+    if (pinUi.buf.length === 4) setTimeout(pinSubmit, 140);
+  }
+  function lockedMsg(ms) {
+    return H("மிகவும் தவறான முயற்சிகள். காத்திருக்கவும்", "Too many wrong tries. Please wait") + ": " + fmtWait(ms);
+  }
+  function pinSubmit() {
+    const u = pinUi;
+    if (!u || u.buf.length !== 4) return;
+    const code = u.buf;
+    u.buf = "";
+    if (u.step === "enter") {
+      const res = L.verifyPin(state.settings.pin, code, Date.now());
+      if (res.rec) { state.settings.pin = res.rec; try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch (e) { /* ignore */ } }
+      if (res.ok) {
+        touchPinSession();
+        const cb = u.cb;
+        closePin();
+        render();
+        if (cb) cb();
+        return;
+      }
+      pinMsg(res.locked ? lockedMsg(res.waitMs) : H("தவறான PIN", "Wrong PIN") + (res.triesLeft != null ? " — " + res.triesLeft + " " + S("முயற்சி மீதம்", "tries left") : ""));
+      renderPin();
+      return;
+    }
+    if (u.step === "new1") {
+      u.first = code;
+      u.step = "new2";
+      pinMsg("");
+      renderPin();
+      return;
+    }
+    if (u.step === "new2") {
+      if (code !== u.first) {
+        u.step = "new1";
+        u.first = "";
+        pinMsg(H("இரண்டும் ஒன்றாக இல்லை — மீண்டும் தொடங்குங்கள்", "The two PINs did not match — start again"));
+        renderPin();
+        return;
+      }
+      if (u.kind === "create") {
+        u.view = "setup";
+        pinEl("pinASet").value = "";
+        pinEl("pinSetupMsg").innerHTML = "";
+        renderPin();
+        setTimeout(() => pinEl("pinASet").focus(), 60);
+        return;
+      }
+      const rp = L.replacePin(state.settings.pin, u.first);
+      if (!rp.ok) { pinMsg(H("PIN சேமிக்க முடியவில்லை", "Could not save the PIN")); return; }
+      state.settings.pin = rp.pin;
+      saveStore();
+      touchPinSession();
+      closePin();
+      render();
+      renderPinSettings();
+      toast(S("புதிய PIN சேமிக்கப்பட்டது ✓ — பதிவுகள் அப்படியே உள்ளன", "New PIN saved ✓ — your entries are untouched"));
+    }
+  }
+  function pinSetupSave() {
+    const u = pinUi;
+    if (!u || u.kind !== "create") return;
+    const res = L.createPinRecord(u.first, pinEl("pinQSel").value, pinEl("pinASet").value, Date.now());
+    if (!res.ok) {
+      pinEl("pinSetupMsg").innerHTML = H("பதில் குறைந்தது 2 எழுத்து வேண்டும்", "The answer needs at least 2 letters");
+      return;
+    }
+    state.settings.pin = res.pin;
+    saveStore();
+    touchPinSession();
+    closePin();
+    render();
+    renderPinSettings();
+    toast(S("PIN அமைக்கப்பட்டது ✓", "PIN is on ✓"));
+  }
+  function renderPinReset() {
+    const st = L.pinResetStatus(state.settings.pin, Date.now());
+    pinEl("pinResetWarn").innerHTML = H("எச்சரிக்கை: PIN நீக்கினால் பூட்டு இல்லாமல் போகும். உங்கள் பதிவுகள், இருப்பு, அமைப்புகள் அழியாது. யாரும் உடனே நீக்கிவிடாமல் இருக்க 24 மணி நேரம் காத்திருக்க வேண்டும்.", "Warning: removing the PIN switches the lock off. Your entries, stock and settings are NOT deleted. To stop anyone doing it in a hurry, you must wait 24 hours first.");
+    const go = pinEl("pinResetGo");
+    if (!st.started) {
+      pinEl("pinResetMsg").innerHTML = "";
+      go.innerHTML = H("24 மணி நேரக் காத்திருப்பைத் தொடங்கு", "Start the 24-hour wait");
+      go.disabled = false;
+    } else if (!st.ready) {
+      pinEl("pinResetMsg").innerHTML = H("மீதம்", "Time left") + ": <strong>" + escapeHtml(fmtWait(st.remainingMs)) + "</strong>";
+      go.innerHTML = H("இன்னும் காத்திருக்கவும்", "Still waiting");
+      go.disabled = true;
+    } else {
+      pinEl("pinResetMsg").innerHTML = H("காத்திருப்பு முடிந்தது.", "The wait is over.");
+      go.innerHTML = H("PIN-ஐ இப்போது நீக்கு (பதிவுகள் இருக்கும்)", "Remove the PIN now (entries are kept)");
+      go.disabled = false;
+    }
+  }
+  function pinResetGo() {
+    const st = L.pinResetStatus(state.settings.pin, Date.now());
+    if (!st.started) {
+      const r = L.startPinReset(state.settings.pin, Date.now());
+      if (r.ok) { state.settings.pin = r.rec; saveStore(); }
+      renderPinReset();
+      return;
+    }
+    if (!st.ready) return;
+    state.settings.pin = null;
+    state.pinUnlockedAt = 0;
+    saveStore();
+    closePin();
+    render();
+    renderPinSettings();
+    toast(S("PIN நீக்கப்பட்டது — பதிவுகள் பாதுகாப்பாக உள்ளன", "PIN removed — all your entries are safe"));
+  }
+  function bindPin() {
+    pinEl("pinPad").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-pk]");
+      if (b) pinPress(b.getAttribute("data-pk"));
+    });
+    pinEl("pinClose").addEventListener("click", closePin);
+    pinEl("pinForgot").addEventListener("click", () => {
+      if (!pinUi) return;
+      pinUi.view = "forgot";
+      pinEl("pinForgotMsg").innerHTML = "";
+      renderPin();
+    });
+    pinEl("pinAnswerOk").addEventListener("click", () => {
+      if (!pinUi) return;
+      const res = L.verifyAnswer(state.settings.pin, pinEl("pinAnswer").value, Date.now());
+      if (res.rec) { state.settings.pin = res.rec; try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch (e) { /* ignore */ } }
+      if (res.ok) {
+        const cb = pinUi.cb;
+        pinUi = Object.assign(pinUi, { kind: "recover", step: "new1", view: "pad", buf: "", first: "", cb });
+        renderPin();
+        return;
+      }
+      pinEl("pinForgotMsg").innerHTML = res.locked ? lockedMsg(res.waitMs) : H("பதில் தவறு", "That answer is not right");
+    });
+    pinEl("pinNoAnswer").addEventListener("click", () => { if (pinUi) { pinUi.view = "reset"; renderPin(); } });
+    pinEl("pinResetGo").addEventListener("click", pinResetGo);
+    pinEl("pinSetupSave").addEventListener("click", pinSetupSave);
+    document.querySelectorAll("#pinLangRow [data-pinlang]").forEach((b) => {
+      b.addEventListener("click", () => { setLanguage(b.getAttribute("data-pinlang")); renderPin(); });
+    });
+    pinEl("btnLock").addEventListener("click", lockNow);
+    pinEl("shopUnlock").addEventListener("click", () => withPin("profit", {}, () => render(), "profit"));
+    pinEl("btnPinSet").addEventListener("click", () => openPin({ kind: "create", reason: "settings" }));
+    pinEl("btnPinChange").addEventListener("click", () => openPin({ kind: "verify", reason: "pinchange", cb: () => openPin({ kind: "change", reason: "pinchange" }) }));
+    pinEl("btnPinOff").addEventListener("click", () => openPin({
+      kind: "verify", reason: "pinoff",
+      cb: () => { state.settings.pin = null; state.pinUnlockedAt = 0; saveStore(); render(); renderPinSettings(); toast(S("PIN நிறுத்தப்பட்டது", "PIN turned off")); }
+    }));
+    document.querySelector(".tot.profit").addEventListener("click", () => {
+      if (profitHidden()) withPin("profit", {}, () => render(), "profit");
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { state.hiddenAt = Date.now(); return; }
+      // away for more than a minute (phone locked, other app): lock again
+      if (pinOn() && state.hiddenAt && Date.now() - state.hiddenAt > 60000) {
+        state.pinUnlockedAt = 0;
+        const st = document.getElementById("settings");
+        if (st && !st.hidden) closeSettings();
+      }
+      render();
+    });
+  }
+  function renderPinSettings() {
+    const on = pinOn();
+    pinEl("pinStatus").innerHTML = on
+      ? "🔒 " + H("PIN இயக்கத்தில் உள்ளது", "PIN is ON")
+      : "🔓 " + H("PIN இல்லை — யார் வேண்டுமானாலும் அமைப்புகளையும் பழைய பதிவுகளையும் மாற்றலாம்", "No PIN — anyone can change settings and past entries");
+    pinEl("btnPinSet").hidden = on;
+    pinEl("btnPinChange").hidden = !on;
+    pinEl("btnPinOff").hidden = !on;
+    pinEl("btnLock").hidden = !on;
+  }
+
+  /* ---------- v10: recipes ---------- */
+  const SMALL_UNIT = { "கிலோ": { name: "கிராம்", f: 1000 }, "லிட்டர்": { name: "மிலி", f: 1000 } };
+  function recipeQtyText(line) {
+    const s = (state.settings.stock || []).find((x) => x.id === line.stockId);
+    if (!s) return "";
+    const small = SMALL_UNIT[s.unit];
+    const q = Number(line.qty);
+    const amt = small && q < 1 ? L.roundMoney(q * small.f) + " " + unitName(small.name) : q + " " + unitName(s.unit);
+    return stockName(s) + " " + amt;
+  }
+  function renderRecipes() {
+    const rec = L.normalizeRecipes(state.settings.recipes);
+    const box = document.getElementById("recipeList");
+    box.innerHTML = (state.settings.menu || []).map((m) => {
+      const r = rec[m.id];
+      const lines = r ? r.lines.map(recipeQtyText).filter(Boolean).join(" · ") : "";
+      const sub = curLang() !== "en" && m.nameEn && m.nameEn !== menuName(m) ? `<div class="en">${escapeHtml(m.nameEn)}</div>` : "";
+      return `<div class="stock-item">
+        <div><strong>${escapeHtml(menuName(m))}</strong>${sub}
+          <div class="help">${lines ? escapeHtml(lines) : escapeHtml(S("செய்முறை இல்லை", "No recipe yet"))}</div>
+          ${r && r.since ? `<div class="help">${escapeHtml(S("கணக்கிடத் தொடங்கிய நாள்", "Counting sales since"))} ${escapeHtml(r.since)}</div>` : ""}
+        </div>
+        <button type="button" class="ghost" data-recipe="${escapeHtml(m.id)}" style="min-height:52px">${H("திருத்து", "Edit")}</button>
+      </div>`;
+    }).join("");
+  }
+  function recipeRowHtml(line, i) {
+    const stock = state.settings.stock || [];
+    const s = stock.find((x) => x.id === line.stockId) || stock[0];
+    const small = s && SMALL_UNIT[s.unit];
+    const units = s ? [s.unit].concat(small ? [small.name] : []) : [];
+    return `<div class="rc-row" data-i="${i}">
+      <select data-k="stock" aria-label="${escapeHtml(S("சரக்கு", "Ingredient"))}">${stock.map((x) => `<option value="${escapeHtml(x.id)}"${s && x.id === s.id ? " selected" : ""}>${escapeHtml(stockName(x))}</option>`).join("")}</select>
+      <input data-k="qty" inputmode="decimal" value="${escapeHtml(line.qtyText == null ? "" : String(line.qtyText))}" placeholder="${escapeHtml(S("அளவு", "Qty"))}">
+      <select data-k="unit">${units.map((u) => `<option value="${escapeHtml(u)}"${u === line.unit ? " selected" : ""}>${escapeHtml(unitName(u))}</option>`).join("")}</select>
+      <button type="button" class="btn-del" data-rm="${i}" aria-label="${escapeHtml(S("நீக்கு", "Remove"))}">🗑️</button>
+    </div>`;
+  }
+  function editorFromRecipe(menuId) {
+    const r = L.normalizeRecipes(state.settings.recipes)[menuId];
+    const stock = state.settings.stock || [];
+    const lines = (r ? r.lines : []).map((l) => {
+      const s = stock.find((x) => x.id === l.stockId);
+      const small = s && SMALL_UNIT[s.unit];
+      if (small && l.qty < 1) return { stockId: l.stockId, qtyText: String(L.roundMoney(l.qty * small.f)), unit: small.name };
+      return { stockId: l.stockId, qtyText: String(l.qty), unit: s ? s.unit : "" };
+    });
+    if (!lines.length && stock.length) lines.push({ stockId: stock[0].id, qtyText: "", unit: stock[0].unit });
+    return { menuId, lines };
+  }
+  function openRecipeEditor(menuId) {
+    const m = (state.settings.menu || []).find((x) => x.id === menuId);
+    if (!m) return;
+    state.recipeEdit = editorFromRecipe(menuId);
+    document.getElementById("recipeEditTitle").innerHTML = "🥣 " + escapeHtml(menuName(m)) + "<div>" + H("செய்முறை", "Recipe") + "</div>";
+    document.getElementById("recipeError").textContent = "";
+    document.getElementById("recipeEditCard").hidden = false;
+    renderRecipeLines();
+    document.getElementById("recipeEditCard").scrollIntoView({ block: "start" });
+  }
+  function renderRecipeLines() {
+    const ed = state.recipeEdit;
+    document.getElementById("recipeLines").innerHTML = ed ? ed.lines.map(recipeRowHtml).join("") : "";
+  }
+  function readRecipeRows() {
+    const ed = state.recipeEdit;
+    if (!ed) return [];
+    const rows = [...document.querySelectorAll("#recipeLines .rc-row")];
+    return rows.map((row, i) => {
+      const prev = ed.lines[i] || {};
+      const stockId = row.querySelector('[data-k="stock"]').value;
+      const unit = row.querySelector('[data-k="unit"]').value;
+      return { stockId, qtyText: row.querySelector('[data-k="qty"]').value.trim(), unit, prev };
+    });
+  }
+  function syncRecipeEditorFromDom() {
+    if (!state.recipeEdit) return;
+    state.recipeEdit.lines = readRecipeRows().map((r) => ({ stockId: r.stockId, qtyText: r.qtyText, unit: r.unit }));
+  }
+  function saveRecipe() {
+    const ed = state.recipeEdit;
+    if (!ed) return;
+    const stock = state.settings.stock || [];
+    const lines = [];
+    for (const r of readRecipeRows()) {
+      if (!r.qtyText) continue;
+      let q = L.parseTamilNumber(r.qtyText);
+      if (!(q > 0)) q = Number(String(r.qtyText).replace(",", "."));
+      if (!(q > 0)) { document.getElementById("recipeError").textContent = S("அளவு சரியாக இல்லை", "That quantity is not valid"); return; }
+      const s = stock.find((x) => x.id === r.stockId);
+      const small = s && SMALL_UNIT[s.unit];
+      if (small && r.unit === small.name) q = q / small.f;
+      lines.push({ stockId: r.stockId, qty: q });
+    }
+    withPin("recipe", {}, () => {
+      state.settings.recipes = L.setRecipe(state.settings.recipes, ed.menuId, lines, L.todayISO());
+      saveStore();
+      document.getElementById("recipeEditCard").hidden = true;
+      state.recipeEdit = null;
+      render();
+      toast(lines.length ? S("செய்முறை சேமிக்கப்பட்டது ✓ — இனி விற்பனை இருப்பைக் குறைக்கும்", "Recipe saved ✓ — sales now reduce the stock") : S("செய்முறை நீக்கப்பட்டது", "Recipe removed"));
+    }, "recipe");
+  }
+  function bindRecipes() {
+    document.getElementById("recipeList").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-recipe]");
+      if (b) withPin("recipe", {}, () => openRecipeEditor(b.getAttribute("data-recipe")), "recipe");
+    });
+    const lines = document.getElementById("recipeLines");
+    lines.addEventListener("change", (e) => {
+      if (e.target.matches('[data-k="stock"]')) {
+        syncRecipeEditorFromDom();
+        const row = e.target.closest(".rc-row");
+        const i = Number(row.getAttribute("data-i"));
+        const s = (state.settings.stock || []).find((x) => x.id === e.target.value);
+        if (state.recipeEdit && state.recipeEdit.lines[i] && s) state.recipeEdit.lines[i].unit = s.unit;
+        renderRecipeLines();
+      }
+    });
+    lines.addEventListener("click", (e) => {
+      const rm = e.target.closest("[data-rm]");
+      if (!rm || !state.recipeEdit) return;
+      syncRecipeEditorFromDom();
+      state.recipeEdit.lines.splice(Number(rm.getAttribute("data-rm")), 1);
+      renderRecipeLines();
+    });
+    document.getElementById("recipeAddLine").addEventListener("click", () => {
+      if (!state.recipeEdit) return;
+      syncRecipeEditorFromDom();
+      const s = (state.settings.stock || [])[0];
+      if (s) state.recipeEdit.lines.push({ stockId: s.id, qtyText: "", unit: s.unit });
+      renderRecipeLines();
+    });
+    document.getElementById("recipeSave").addEventListener("click", saveRecipe);
+    document.getElementById("recipeCancel").addEventListener("click", () => { document.getElementById("recipeEditCard").hidden = true; state.recipeEdit = null; });
+    document.getElementById("recipeClear").addEventListener("click", () => {
+      if (!state.recipeEdit) return;
+      document.querySelectorAll("#recipeLines .rc-row [data-k='qty']").forEach((i) => { i.value = ""; });
+      saveRecipe();
+    });
+  }
+
+  /* ---------- v10: backup reminder + one-tap share ---------- */
+  function fmtDateTime(iso) {
+    try {
+      const loc = { ta: "ta-IN", en: "en-IN", hi: "hi-IN", mr: "mr-IN" }[curLang()] || "en-IN";
+      return new Date(iso).toLocaleString(loc, { timeZone: "Asia/Calcutta", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch (e) { return String(iso); }
+  }
+  function markBackup() {
+    state.settings.lastBackup = new Date().toISOString();
+    state.settings.backupSnoozeUntil = null;
+    saveStore();
+    render();
+    renderBackupSettings();
+  }
+  async function backupNow(mode) {
+    const payload = L.buildBackupPayload(state.settings, state.entries, Date.now());
+    const text = JSON.stringify(payload, null, 2);
+    const name = L.backupFileName(L.todayISO());
+    if (mode !== "download") {
+      try {
+        const file = new File([text], name, { type: "application/json" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: name, text: P("கடை கணக்கு காப்பு", "Kadai Tracker backup") });
+          markBackup();
+          toast(S("காப்பு பகிரப்பட்டது ✓", "Backup shared ✓"));
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === "AbortError") return; // user closed the share sheet: not a backup
+        /* any other share problem → download instead */
+      }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    markBackup();
+    toast(S("காப்பு கோப்பு பதிவிறக்கம் ஆனது ✓", "Backup downloaded ✓"));
+  }
+  function renderBackupSettings() {
+    const el = document.getElementById("lastBackupLine");
+    if (!el) return;
+    const last = state.settings.lastBackup;
+    el.innerHTML = H("கடைசி காப்பு", "Last backup") + ": <strong>" + (last ? escapeHtml(fmtDateTime(last)) : escapeHtml(S("இன்னும் இல்லை", "never"))) + "</strong>";
+  }
+  function renderBanners() {
+    const b = document.getElementById("backupBanner");
+    if (!b) return;
+    const due = L.backupReminderDue(state.settings, state.entries.length);
+    // one nudge at a time: the backup reminder wins over the install offer (keeps the screen free for the shop)
+    document.getElementById("installBanner").hidden = !(state.installEvt && state.installOffer) || due;
+    if (!due) { b.hidden = true; b.innerHTML = ""; return; }
+    const days = L.daysSinceBackup(state.settings);
+    const info = days == null
+      ? H("இன்னும் காப்பு இல்லை — பதிவுகள் இந்த போனில் மட்டும்", "No backup yet — entries are only on this phone")
+      : H("இன்று காப்பு எடுக்கவில்லை", "No backup taken today") + `<div class="help">${escapeHtml(S("கடைசி காப்பு", "Last backup"))}: ${escapeHtml(fmtDateTime(state.settings.lastBackup))}</div>`;
+    b.innerHTML = `<div class="sys-text" style="display:flex;gap:8px;align-items:flex-start"><span aria-hidden="true">📦</span><div>${info}</div></div>
+      <div class="sys-btns">
+        <button type="button" class="ok" id="backupNow">${H("இப்போது காப்பு", "Back up now")}</button>
+        <button type="button" class="ghost" id="backupLater">${H("பிறகு", "Later")}</button>
+      </div>`;
+    b.hidden = false;
+  }
+
+  /* ---------- v10: installable app + update banner ---------- */
+  function showUpdateBanner(worker) {
+    state.updateWorker = worker || state.updateWorker || null;
+    const el = document.getElementById("updateBanner");
+    if (el) el.hidden = false;
+  }
+  function applyUpdate() {
+    state.updating = true;
+    const w = state.updateWorker;
+    if (w && w.postMessage) {
+      try { w.postMessage({ type: "SKIP_WAITING" }); } catch (e) { /* ignore */ }
+      setTimeout(() => location.reload(), 1500); // fallback if controllerchange never fires
+    } else {
+      location.reload();
+    }
+  }
+  function checkBuildNow() {
+    if (!/^https?:$/.test(location.protocol) || !window.fetch) return;
+    fetch(location.pathname + "?b=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).then((t) => {
+      const m = /window\.KADAI_BUILD\s*=\s*"([0-9a-f]{8})"/.exec(t || "");
+      if (m && window.KADAI_BUILD && /^[0-9a-f]{8}$/.test(window.KADAI_BUILD) && m[1] !== window.KADAI_BUILD) showUpdateBanner(state.updateWorker);
+    }).catch(() => { /* offline: nothing to check */ });
+  }
+  function setupPwa() {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      state.installEvt = e;
+      let dismissed = 0;
+      try { dismissed = Number(localStorage.getItem("kadai-install-dismissed") || 0); } catch (err) { /* ignore */ }
+      state.installOffer = Date.now() - dismissed > 7 * 86400000;
+      renderBanners();
+    });
+    window.addEventListener("appinstalled", () => { document.getElementById("installBanner").hidden = true; state.installEvt = null; });
+    document.getElementById("installBtn").addEventListener("click", () => {
+      const ev = state.installEvt;
+      state.installOffer = false;
+      document.getElementById("installBanner").hidden = true;
+      if (ev && ev.prompt) { try { ev.prompt(); } catch (e) { /* ignore */ } }
+      state.installEvt = null;
+    });
+    document.getElementById("installClose").addEventListener("click", () => {
+      state.installOffer = false;
+      document.getElementById("installBanner").hidden = true;
+      try { localStorage.setItem("kadai-install-dismissed", String(Date.now())); } catch (e) { /* ignore */ }
+    });
+    document.getElementById("updateBtn").addEventListener("click", applyUpdate);
+    if (!("serviceWorker" in navigator) || !/^https?:$/.test(location.protocol)) return;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (state.updating) location.reload(); // only after the user tapped the banner
+    });
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+      state.swReg = reg;
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg.waiting);
+      reg.addEventListener("updatefound", () => {
+        const w = reg.installing;
+        if (!w) return;
+        w.addEventListener("statechange", () => {
+          if (w.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner(w);
+        });
+      });
+      const check = () => { try { reg.update().catch(() => { /* offline */ }); } catch (e) { /* ignore */ } checkBuildNow(); };
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
+      setInterval(check, 30 * 60 * 1000);
+      setTimeout(checkBuildNow, 4000);
+    }).catch(() => { /* the app works without it */ });
   }
 
   function bind() {
@@ -2031,7 +2633,7 @@
     document.getElementById("todayBtn").addEventListener("click", () => { state.date = L.todayISO(); render(); });
     document.getElementById("btnIncome").addEventListener("click", () => openForm({ mode: "add", type: "income" }));
     document.getElementById("btnExpense").addEventListener("click", () => openForm({ mode: "add", type: "expense" }));
-    document.getElementById("btnSettings").addEventListener("click", openSettings);
+    document.getElementById("btnSettings").addEventListener("click", () => withPin("settings", {}, openSettings, "settings"));
     document.getElementById("btnAdd").addEventListener("click", (e) => {
       e.stopPropagation();
       const menu = document.getElementById("addMenu");
@@ -2047,7 +2649,7 @@
     document.getElementById("btnExpense").addEventListener("click", () => setAddMenuOpen(false));
     document.getElementById("backdrop").addEventListener("click", () => {
       setAddMenuOpen(false);
-      closeForm(); closeModal(); closeSettings(); closeConfirm(); resetDeleteButtons();
+      closeForm(); closeModal(); closeSettings(); closeConfirm(); resetDeleteButtons(); closePin();
     });
     document.getElementById("closeForm").addEventListener("click", closeForm);
     document.getElementById("entryForm").addEventListener("submit", saveForm);
@@ -2199,6 +2801,19 @@
       renderMenuEditor();
     });
     document.getElementById("btnExport").addEventListener("click", exportBackup);
+    document.getElementById("btnShareBackup").addEventListener("click", () => backupNow("share"));
+    document.getElementById("sysBanners").addEventListener("click", (e) => {
+      if (e.target.closest("#backupNow")) backupNow("share");
+      else if (e.target.closest("#backupLater")) {
+        state.settings.backupSnoozeUntil = new Date(Date.now() + 4 * 3600000).toISOString();
+        saveStore();
+        renderBanners();
+      }
+    });
+    document.getElementById("importFile").addEventListener("click", (e) => {
+      const input = e.currentTarget;
+      if (gated("restore", {}, () => input.click(), "restore")) e.preventDefault();
+    });
     document.getElementById("importFile").addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0];
       if (f) importBackup(f);
@@ -2328,17 +2943,17 @@
       state.shopSection = btn.getAttribute("data-shop");
       renderShop();
     });
-    document.getElementById("btnStockIn").addEventListener("click", () => openStockMove("in"));
-    document.getElementById("btnStockOut").addEventListener("click", () => openStockMove("out"));
-    document.getElementById("btnStockNew").addEventListener("click", () => {
+    document.getElementById("btnStockIn").addEventListener("click", () => withPin("stock", {}, () => openStockMove("in"), "stock"));
+    document.getElementById("btnStockOut").addEventListener("click", () => withPin("stock", {}, () => openStockMove("out"), "stock"));
+    document.getElementById("btnStockNew").addEventListener("click", () => withPin("stock", {}, () => {
       document.getElementById("stockMoveForm").hidden = true;
       document.getElementById("stockNewForm").hidden = false;
       document.getElementById("newStockTa").focus();
-    });
+    }, "stock"));
     document.getElementById("stockMoveCancel").addEventListener("click", () => { document.getElementById("stockMoveForm").hidden = true; });
     document.getElementById("stockNewCancel").addEventListener("click", () => { document.getElementById("stockNewForm").hidden = true; });
-    document.getElementById("stockMoveForm").addEventListener("submit", (e) => { e.preventDefault(); submitStockMove(); });
-    document.getElementById("stockNewForm").addEventListener("submit", (e) => { e.preventDefault(); submitNewStock(); });
+    document.getElementById("stockMoveForm").addEventListener("submit", (e) => { e.preventDefault(); withPin("stock", {}, submitStockMove, "stock"); });
+    document.getElementById("stockNewForm").addEventListener("submit", (e) => { e.preventDefault(); withPin("stock", {}, submitNewStock, "stock"); });
     document.getElementById("saveMargins").addEventListener("click", saveMargins);
     document.getElementById("btnAddStaff").addEventListener("click", () => {
       document.getElementById("wageForm").hidden = true;
@@ -2450,9 +3065,13 @@
   }
 
   loadStore();
+  syncStock();
   if (state.settingsMigrated) {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch (e) { /* ignore */ }
   }
   bind();
+  bindPin();
+  bindRecipes();
+  setupPwa();
   render();
 })();

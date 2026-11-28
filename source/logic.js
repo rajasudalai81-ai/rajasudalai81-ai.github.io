@@ -2576,7 +2576,8 @@
     "மூட்டை": { en: "bag", hi: "बोरी", mr: "पोते" },
     "சிலிண்டர்": { en: "cylinder", hi: "सिलेंडर", mr: "सिलेंडर" },
     "பிளேட்": { en: "plate", hi: "प्लेट", mr: "प्लेट" },
-    "டஜன்": { en: "dozen", hi: "दर्जन", mr: "डझन" }
+    "டஜன்": { en: "dozen", hi: "दर्जन", mr: "डझन" },
+    "மிலி": { en: "ml", hi: "मिली", mr: "मिली" }
   };
   /** Stored Tamil unit → label in the chosen language. */
   function unitLabel(unit, lang) {
@@ -3933,7 +3934,456 @@
   ["கொடுத்தான்", "குடுத்தான்", "கொடுத்தாங்க", "குடுத்தாங்க", "கொடுத்தார்", "koduthan", "kuduthan", "koduthaan", "kuduthaan", "koduthaanga", "kuduthaanga"].forEach((w) => CMD_INCOME_WORDS.push(w));
   ["பில்", "பில்லு", "கரண்ட்", "லைட்", "வீடு", "வீட்டு", "ஸ்கூல்", "பஸ்", "ஆட்டோ", "auto", "bus", "school", "ghar", "rent", "bhaade", "maal", "gaadi"].forEach((w) => NAME_BLOCK.add(w));
 
+  /* =====================================================================
+   * v10: owner PIN (salted hash), recipes + automatic stock moves, backup reminder
+   * ===================================================================== */
+
+  // ---- Small synchronous SHA-256 (no crypto.subtle needed; works on http/file and in Node tests) ----
+  const SHA_K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+  function utf8Bytes(str) {
+    const out = [];
+    const s = unescape(encodeURIComponent(String(str)));
+    for (let i = 0; i < s.length; i++) out.push(s.charCodeAt(i));
+    return out;
+  }
+  function sha256Hex(str) {
+    const bytes = utf8Bytes(str);
+    const bitLen = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    const hi = Math.floor(bitLen / 0x100000000);
+    const lo = bitLen >>> 0;
+    bytes.push((hi >>> 24) & 255, (hi >>> 16) & 255, (hi >>> 8) & 255, hi & 255, (lo >>> 24) & 255, (lo >>> 16) & 255, (lo >>> 8) & 255, lo & 255);
+    const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const w = new Array(64);
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let off = 0; off < bytes.length; off += 64) {
+      for (let i = 0; i < 16; i++) w[i] = ((bytes[off + i * 4] << 24) | (bytes[off + i * 4 + 1] << 16) | (bytes[off + i * 4 + 2] << 8) | bytes[off + i * 4 + 3]) >>> 0;
+      for (let i = 16; i < 64; i++) {
+        const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+        const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let i = 0; i < 64; i++) {
+        const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const t1 = (h + S1 + ch + SHA_K[i] + w[i]) >>> 0;
+        const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const t2 = (S0 + maj) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+      H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+    }
+    return H.map((x) => ("00000000" + x.toString(16)).slice(-8)).join("");
+  }
+
+  const PIN_ITER = 2000;
+  const PIN_FREE_FAILS = 5;
+  const PIN_RESET_WAIT_MS = 24 * 3600 * 1000;
+  const PIN_SESSION_MS = 3 * 60 * 1000;
+
+  function randomSalt() {
+    let hex = "";
+    try {
+      const c = (typeof globalThis !== "undefined" && globalThis.crypto) || null;
+      if (c && c.getRandomValues) {
+        const a = new Uint8Array(16);
+        c.getRandomValues(a);
+        for (let i = 0; i < a.length; i++) hex += ("0" + a[i].toString(16)).slice(-2);
+        return hex;
+      }
+    } catch (e) { /* fall through */ }
+    for (let i = 0; i < 32; i++) hex += Math.floor(Math.random() * 16).toString(16);
+    return hex;
+  }
+  function hashSecret(secret, salt, iter) {
+    let h = sha256Hex(salt + ":" + secret);
+    const n = iter || PIN_ITER;
+    for (let i = 1; i < n; i++) h = sha256Hex(h + salt);
+    return h;
+  }
+  function safeEqual(a, b) {
+    a = String(a); b = String(b);
+    if (a.length !== b.length) return false;
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return d === 0;
+  }
+  function normalizePin(p) {
+    const s = String(p == null ? "" : p).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660)).replace(/[०-९]/g, (c) => String(c.charCodeAt(0) - 0x966)).replace(/\s+/g, "");
+    return /^\d{4}$/.test(s) ? s : null;
+  }
+  function normalizeAnswer(a) {
+    return String(a == null ? "" : a).normalize("NFC").toLowerCase().replace(/[\s.,'’"`\-_]+/g, "");
+  }
+  const PIN_QUESTIONS = [
+    { id: "mother", ta: "அம்மாவின் பெயர்?", en: "Your mother's first name?", hi: "माँ का नाम?", mr: "आईचे नाव?" },
+    { id: "village", ta: "பிறந்த ஊர்?", en: "Your native village / town?", hi: "जन्म का गाँव / शहर?", mr: "जन्मगाव / शहर?" },
+    { id: "school", ta: "முதல் பள்ளியின் பெயர்?", en: "Name of your first school?", hi: "पहले स्कूल का नाम?", mr: "पहिल्या शाळेचे नाव?" },
+    { id: "year", ta: "பிறந்த வருடம்?", en: "Your birth year?", hi: "जन्म का साल?", mr: "जन्म वर्ष?" }
+  ];
+
+  /** Build a PIN record. Only salted hashes are kept — never the PIN or the answer. */
+  function createPinRecord(pin, questionId, answer, now) {
+    const p = normalizePin(pin);
+    if (!p) return { ok: false, errors: ["pin-format"] };
+    const a = normalizeAnswer(answer);
+    if (a.length < 2) return { ok: false, errors: ["answer-short"] };
+    if (!PIN_QUESTIONS.some((q) => q.id === questionId)) return { ok: false, errors: ["question"] };
+    const salt = randomSalt();
+    const qSalt = randomSalt();
+    return {
+      ok: true,
+      pin: {
+        v: 1, iter: PIN_ITER, salt, hash: hashSecret(p, salt, PIN_ITER),
+        q: questionId, qSalt, qHash: hashSecret(a, qSalt, PIN_ITER),
+        setAt: now || Date.now(), failCount: 0, lockUntil: 0, resetAt: 0
+      }
+    };
+  }
+  function pinEnabled(settings) {
+    const r = settings && settings.pin;
+    return !!(r && r.hash && r.salt);
+  }
+  function lockWaitMs(rec, now) {
+    return Math.max(0, Number((rec && rec.lockUntil) || 0) - (now || Date.now()));
+  }
+  function registerFail(rec, now) {
+    const failCount = Number(rec.failCount || 0) + 1;
+    let lockUntil = Number(rec.lockUntil || 0);
+    if (failCount % PIN_FREE_FAILS === 0) {
+      const round = failCount / PIN_FREE_FAILS;
+      lockUntil = (now || Date.now()) + Math.min(15 * 60 * 1000, 30 * 1000 * Math.pow(2, round - 1));
+    }
+    return { ...rec, failCount, lockUntil };
+  }
+  /** Check a PIN. Returns the (possibly updated) record so the caller can save the fail counter. */
+  function verifyPin(rec, pin, now) {
+    now = now || Date.now();
+    if (!rec || !rec.hash) return { ok: false, rec, error: "no-pin" };
+    const wait = lockWaitMs(rec, now);
+    if (wait > 0) return { ok: false, rec, locked: true, waitMs: wait };
+    const p = normalizePin(pin);
+    if (p && safeEqual(hashSecret(p, rec.salt, rec.iter), rec.hash)) {
+      return { ok: true, rec: { ...rec, failCount: 0, lockUntil: 0, resetAt: 0 } };
+    }
+    const next = registerFail(rec, now);
+    const w = lockWaitMs(next, now);
+    return { ok: false, rec: next, locked: w > 0, waitMs: w, triesLeft: w > 0 ? 0 : PIN_FREE_FAILS - (next.failCount % PIN_FREE_FAILS) };
+  }
+  function verifyAnswer(rec, answer, now) {
+    now = now || Date.now();
+    if (!rec || !rec.qHash) return { ok: false, rec, error: "no-pin" };
+    const wait = lockWaitMs(rec, now);
+    if (wait > 0) return { ok: false, rec, locked: true, waitMs: wait };
+    const a = normalizeAnswer(answer);
+    if (a && safeEqual(hashSecret(a, rec.qSalt, rec.iter), rec.qHash)) {
+      return { ok: true, rec: { ...rec, failCount: 0, lockUntil: 0, resetAt: 0 } };
+    }
+    const next = registerFail(rec, now);
+    const w = lockWaitMs(next, now);
+    return { ok: false, rec: next, locked: w > 0, waitMs: w };
+  }
+  /** New PIN after a correct recovery answer (keeps the same question + answer). */
+  function replacePin(rec, newPin) {
+    const p = normalizePin(newPin);
+    if (!p || !rec) return { ok: false, errors: ["pin-format"] };
+    const salt = randomSalt();
+    return { ok: true, pin: { ...rec, salt, hash: hashSecret(p, salt, rec.iter || PIN_ITER), failCount: 0, lockUntil: 0, resetAt: 0, setAt: Date.now() } };
+  }
+  /** No PIN, no answer: start a 24-hour wait. After it the PIN can be removed — entries and settings stay. */
+  function startPinReset(rec, now) {
+    now = now || Date.now();
+    if (!rec) return { ok: false };
+    const resetAt = rec.resetAt && now - rec.resetAt < PIN_RESET_WAIT_MS * 7 ? rec.resetAt : now;
+    return { ok: true, rec: { ...rec, resetAt }, readyAt: resetAt + PIN_RESET_WAIT_MS };
+  }
+  function pinResetStatus(rec, now) {
+    now = now || Date.now();
+    if (!rec || !rec.resetAt) return { started: false, ready: false, remainingMs: PIN_RESET_WAIT_MS };
+    const remaining = Math.max(0, rec.resetAt + PIN_RESET_WAIT_MS - now);
+    return { started: true, ready: remaining === 0, remainingMs: remaining };
+  }
+  function pinSessionValid(unlockedAt, now) {
+    return !!unlockedAt && (now || Date.now()) - unlockedAt < PIN_SESSION_MS;
+  }
+  function isoToLocalDay(iso) {
+    const t = Date.parse(iso);
+    return Number.isNaN(t) ? "" : todayISO(t);
+  }
+  /** "Today's own new entry": dated today AND created today. Everything else counts as a past entry. */
+  function isTodayOwnEntry(entry, today) {
+    if (!entry) return false;
+    const t = today || todayISO();
+    if (normalizeDate(entry.date) !== t) return false;
+    if (!entry.createdAt) return true;
+    const created = isoToLocalDay(entry.createdAt);
+    return !created || created === t;
+  }
+  const PIN_ALWAYS = ["settings", "restore", "stock", "recipe", "profit", "margins", "wages", "share-summary", "mark-paid"];
+  /** Does this action need the owner PIN right now (before the session check)? */
+  function pinRequiredFor(settings, action, ctx) {
+    if (!pinEnabled(settings)) return false;
+    ctx = ctx || {};
+    const today = ctx.today || todayISO();
+    if (PIN_ALWAYS.indexOf(action) !== -1) return true;
+    if (action === "edit-entry" || action === "delete-entry") return !isTodayOwnEntry(ctx.entry, today);
+    if (action === "add-entry") return normalizeDate(ctx.date || today) !== today;
+    return false;
+  }
+
+  // ---- Recipes and automatic stock moves ----
+  const UNIT_FAMILY = {
+    "கிலோ": ["mass", 1000], "கிராம்": ["mass", 1],
+    "லிட்டர்": ["vol", 1], "மிலி": ["vol", 0.001],
+    "எண்ணிக்கை": ["count", 1], "சிலிண்டர்": ["count", 1], "கிளாஸ்": ["count", 1], "டஜன்": ["count", 12],
+    "பொட்டலம்": ["pack", 1]
+  };
+  /** Convert qty between compatible units (kg↔gram, dozen→count). null when they can't be compared. */
+  function convertQty(qty, from, to) {
+    const n = Number(qty);
+    if (Number.isNaN(n)) return null;
+    const f = String(from || "").trim();
+    const t = String(to || "").trim();
+    if (!f || f === t) return n;
+    const a = UNIT_FAMILY[f];
+    const b = UNIT_FAMILY[t];
+    if (!a || !b || a[0] !== b[0]) return null;
+    return n * a[1] / b[1];
+  }
+  const STOCK_ALIASES = {
+    maavu: ["மாவு", "maavu", "flour", "batter", "atta", "aata", "आटा", "पीठ", "पिठ"],
+    paal: ["பால்", "paal", "milk", "दूध"],
+    sugar: ["சக்கரை", "சீனி", "சர்க்கரை", "sugar", "cheeni", "चीनी", "साखर"],
+    teapowder: ["டீ தூள்", "tea powder", "chai patti", "चाय पत्ती", "चहा पावडर"],
+    oil: ["எண்ணெய்", "oil", "tel", "तेल"],
+    gas: ["வாயு சிலிண்டர்", "வாயு", "gas", "gas cylinder", "cylinder", "गैस", "सिलेंडर"]
+  };
+  function stockItemByName(name, stock) {
+    const n = String(name || "").trim().toLowerCase();
+    if (!n) return null;
+    for (const s of stock || []) {
+      const names = [s.nameTa, s.nameEn].concat(STOCK_ALIASES[s.id] || []).map((x) => String(x || "").trim().toLowerCase()).filter(Boolean);
+      if (names.indexOf(n) !== -1) return s;
+    }
+    return null;
+  }
+  function normalizeRecipeLines(lines) {
+    return (Array.isArray(lines) ? lines : []).map((l) => ({ stockId: String((l && l.stockId) || ""), qty: roundQty(Number(l && l.qty)) }))
+      .filter((l) => l.stockId && l.qty > 0 && !Number.isNaN(l.qty));
+  }
+  function normalizeRecipes(recipes) {
+    const out = {};
+    if (!recipes || typeof recipes !== "object") return out;
+    for (const k of Object.keys(recipes)) {
+      const r = recipes[k] || {};
+      const lines = normalizeRecipeLines(r.lines);
+      if (lines.length) out[k] = { since: String(r.since || ""), lines };
+    }
+    return out;
+  }
+  /** Save one menu item's recipe. `since` (when it started counting sales) is kept if it already had one. */
+  function setRecipe(recipes, menuId, lines, today) {
+    const next = normalizeRecipes(recipes);
+    const clean = normalizeRecipeLines(lines);
+    if (!clean.length) {
+      delete next[menuId];
+    } else {
+      const prev = next[menuId];
+      next[menuId] = { since: prev && prev.since ? prev.since : normalizeDate(today || todayISO()), lines: clean };
+    }
+    return next;
+  }
+  /** Link old stock moves to the expense that created them (their id equals entry.stockMoveId). */
+  function linkLegacyStockMoves(entries, moves) {
+    const byMove = new Map();
+    for (const e of entries || []) if (e && e.stockMoveId) byMove.set(String(e.stockMoveId), e.id);
+    let changed = 0;
+    const out = (moves || []).map((m) => {
+      if (!m.entryId && byMove.has(String(m.id))) { changed += 1; return { ...m, entryId: byMove.get(String(m.id)), source: m.source || "purchase" }; }
+      return m;
+    });
+    return { moves: out, changed };
+  }
+  function entryQtyOrOne(e) {
+    const q = Number(e.qty);
+    return q > 0 && !Number.isNaN(q) ? q : 1;
+  }
+  /** What stock moves should exist for these entries? Map key → {entryId,itemId,type,qty,date,source} */
+  function desiredStockMoves(entries, settings) {
+    const want = new Map();
+    const stock = settings.stock || [];
+    const stockById = new Map(stock.map((s) => [s.id, s]));
+    const recipes = normalizeRecipes(settings.recipes);
+    const menu = settings.menu || [];
+    const since = settings.autoStockSince || "";
+    const existingByMove = new Map();
+    for (const m of settings.stockMoves || []) existingByMove.set(String(m.id), m);
+    for (const e of entries || []) {
+      if (!e || e.deleted) continue;
+      const date = normalizeDate(e.date);
+      if (e.type === "income") {
+        const mi = matchMenuItem(e, menu);
+        const rec = mi && recipes[mi.id];
+        if (!rec || (rec.since && date < rec.since)) continue;
+        if (Number(e.amount) < 0) continue;
+        const sold = entryQtyOrOne(e);
+        for (const line of rec.lines) {
+          if (!stockById.has(line.stockId)) continue;
+          const key = e.id + "|" + line.stockId + "|out";
+          const prev = want.get(key);
+          const qty = roundQty(sold * line.qty);
+          want.set(key, { entryId: e.id, itemId: line.stockId, type: "out", qty: prev ? roundQty(prev.qty + qty) : qty, date, source: "sale", note: (mi.nameTa || mi.nameEn || "") + " × " + sold });
+        }
+      } else if (e.type === "expense") {
+        if (e.stockMoveId && existingByMove.has(String(e.stockMoveId)) && e.stockItemId && stockById.has(e.stockItemId)) {
+          // purchase made on the Stock screen: keep its stock move in step with the expense (never create one)
+          const q = Number(e.qty);
+          const old = existingByMove.get(String(e.stockMoveId));
+          want.set(e.id + "|" + e.stockItemId + "|in", { entryId: e.id, itemId: e.stockItemId, type: "in", qty: q > 0 ? roundQty(q) : old.qty, date, source: "purchase", note: old.note || "" });
+          continue;
+        }
+        if (e.stockMoveId || e.category === "wage" || e.category === "paid-to" || e.category === "received-from") continue;
+        if (!since || date < since) continue;
+        const q = Number(e.qty);
+        if (!(q > 0)) continue;
+        const s = stockItemByName(e.item, stock);
+        if (!s) continue;
+        const conv = convertQty(q, e.unit, s.unit);
+        if (conv == null || !(conv > 0)) continue;
+        want.set(e.id + "|" + s.id + "|in", { entryId: e.id, itemId: s.id, type: "in", qty: roundQty(conv), date, source: "purchase", note: e.item || "" });
+      }
+    }
+    return want;
+  }
+  /**
+   * Bring stock counts and the managed stock moves in line with the entries.
+   * Safe to call after every change: it adds moves for new sales/purchases, adjusts them when an entry is
+   * edited, and reverses them when an entry is deleted. Manual "Use stock" moves are never touched.
+   */
+  function syncAutoStock(entries, settings) {
+    const linked = linkLegacyStockMoves(entries, settings.stockMoves || []);
+    let moves = linked.moves.map((m) => ({ ...m }));
+    let stock = (settings.stock || []).map((s) => ({ ...s }));
+    const changes = [];
+    const want = desiredStockMoves(entries, { ...settings, stockMoves: moves });
+    const idxById = new Map(stock.map((s, i) => [s.id, i]));
+    const apply = (itemId, delta) => {
+      const i = idxById.get(itemId);
+      if (i == null) return;
+      stock[i] = { ...stock[i], qty: roundQty(Number(stock[i].qty) + delta) };
+    };
+    const seen = new Set();
+    const kept = [];
+    for (const m of moves) {
+      if (!m.entryId) { kept.push(m); continue; }
+      const key = m.entryId + "|" + m.itemId + "|" + m.type;
+      const w = want.get(key);
+      if (!w || seen.has(key)) {
+        // entry deleted / no longer matches / duplicate → reverse
+        if (idxById.has(m.itemId)) apply(m.itemId, m.type === "out" ? Number(m.qty) : -Number(m.qty));
+        changes.push({ entryId: m.entryId, itemId: m.itemId, type: m.type, delta: m.type === "out" ? Number(m.qty) : -Number(m.qty), kind: "reverse" });
+        continue;
+      }
+      seen.add(key);
+      let cur = m;
+      if (Math.abs(Number(m.qty) - w.qty) > 1e-9) {
+        const diff = w.qty - Number(m.qty);
+        const delta = m.type === "out" ? -diff : diff;
+        apply(m.itemId, delta);
+        changes.push({ entryId: m.entryId, itemId: m.itemId, type: m.type, delta, kind: "adjust" });
+        cur = { ...cur, qty: w.qty };
+      }
+      if (cur.date !== w.date) cur = { ...cur, date: w.date };
+      kept.push(cur);
+    }
+    for (const [key, w] of want) {
+      if (seen.has(key)) continue;
+      const delta = w.type === "out" ? -w.qty : w.qty;
+      apply(w.itemId, delta);
+      kept.push({ id: newId(), type: w.type, itemId: w.itemId, qty: w.qty, date: w.date, note: w.note || "", entryId: w.entryId, source: w.source, auto: true, createdAt: new Date().toISOString() });
+      changes.push({ entryId: w.entryId, itemId: w.itemId, type: w.type, delta, kind: "add" });
+    }
+    const changed = changes.length > 0 || linked.changed > 0;
+    return { stock, stockMoves: kept, changes, changed };
+  }
+  /** entryId → managed stock moves, for the "🥣 மாவு −0.5 கிலோ" line under a row. */
+  function stockEffectsByEntry(moves) {
+    const map = new Map();
+    for (const m of moves || []) {
+      if (!m.entryId) continue;
+      if (!map.has(m.entryId)) map.set(m.entryId, []);
+      map.get(m.entryId).push(m);
+    }
+    return map;
+  }
+  /** Stock items that went below zero because sales used more than was counted in. */
+  function negativeStock(stock) {
+    return (stock || []).filter((s) => Number(s.qty) < 0);
+  }
+
+  // ---- Backup reminder ----
+  function backupFileName(today) {
+    return "kadai-tracker-backup-" + (today || todayISO()) + ".json";
+  }
+  function buildBackupPayload(settings, entries, now) {
+    return {
+      app: "kadai-tracker",
+      version: 5,
+      exportedAt: new Date(now || Date.now()).toISOString(),
+      settings,
+      entries
+    };
+  }
+  /** Is the daily backup reminder due? Not backed up today, there is data, and not snoozed. */
+  function backupReminderDue(settings, entryCount, now) {
+    now = now || Date.now();
+    if (!(entryCount > 0)) return false;
+    const last = settings && settings.lastBackup;
+    if (last && isoToLocalDay(last) === todayISO(now)) return false;
+    const snooze = settings && settings.backupSnoozeUntil;
+    if (snooze && Date.parse(snooze) > now) return false;
+    return true;
+  }
+  function daysSinceBackup(settings, now) {
+    const last = settings && settings.lastBackup;
+    if (!last) return null;
+    const a = Date.parse(isoToLocalDay(last) + "T00:00:00Z");
+    const b = Date.parse(todayISO(now || Date.now()) + "T00:00:00Z");
+    return Math.max(0, Math.round((b - a) / 86400000));
+  }
+  /** Fill in the v10 settings fields on an existing settings object (migration). */
+  function migrateV10(settings, entries, today) {
+    const s = { ...settings };
+    const t = today || todayISO();
+    s.recipes = normalizeRecipes(s.recipes);
+    s.autoStockSince = s.autoStockSince || t;
+    s.lastBackup = s.lastBackup || null;
+    s.backupSnoozeUntil = s.backupSnoozeUntil || null;
+    s.pin = s.pin && s.pin.hash ? s.pin : null;
+    const linked = linkLegacyStockMoves(entries, s.stockMoves || []);
+    s.stockMoves = linked.moves;
+    return s;
+  }
+
   const api = {
+    sha256Hex, hashSecret, normalizePin, normalizeAnswer, PIN_QUESTIONS, PIN_ITER, PIN_FREE_FAILS, PIN_RESET_WAIT_MS, PIN_SESSION_MS,
+    createPinRecord, pinEnabled, verifyPin, verifyAnswer, replacePin, startPinReset, pinResetStatus, pinSessionValid, lockWaitMs,
+    isTodayOwnEntry, pinRequiredFor,
+    convertQty, stockItemByName, normalizeRecipes, setRecipe, linkLegacyStockMoves, desiredStockMoves, syncAutoStock, stockEffectsByEntry, negativeStock,
+    backupFileName, buildBackupPayload, backupReminderDue, daysSinceBackup, migrateV10,
     parseTamilNumber,
     parseUtterance,
     parseUtterances,

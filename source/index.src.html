@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#3A2416">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="__ICON192__">
+  <link rel="apple-touch-icon" href="__ICON192__">
+  <script>window.KADAI_BUILD = "__BUILD__";</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="கடை கணக்கு">
@@ -322,7 +326,10 @@
     }
     .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; font-weight: 700; }
 
-    .shop-sub { display: flex; gap: 6px; margin: 0 0 12px; }
+    .shop-sub { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin: 0 0 12px; }
+    .shop-sub button { padding-left: 2px; padding-right: 2px; }
+    .shop-sub button .ta { font-size: 15px; }
+    .shop-sub button .en { font-size: 11px; }
     .shop-sub button {
       flex: 1; border: 1.5px solid var(--line); background: #fff; border-radius: 14px;
       min-height: 52px; font-weight: 700; padding: 6px 4px;
@@ -522,6 +529,53 @@
     .meta.calc { color: #7C4A03; }
     .check-row { display: flex; gap: 10px; align-items: center; margin: 10px 0 4px; font-weight: 700; }
     .check-row input { width: 24px; height: 24px; }
+    /* ---- v10: banners, PIN pad, recipes ---- */
+    .sys-banners { display: grid; gap: 6px; margin: 6px 0 0; }
+    .sys-banners:empty { display: none; }
+    .sys-banner { border-radius: 14px; padding: 8px 10px; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+    .sys-banner .ta { font-size: 15px; line-height: 1.2; }
+    .sys-banner .en { font-size: 11px; }
+    .sys-banner .help { font-size: 11px; margin: 0; }
+    .sys-banner[hidden] { display: none !important; }
+    .sys-banner.update { background: #0A6B3C; color: #fff; padding: 0; }
+    .sys-banner.update button { width: 100%; min-height: 56px; border: 0; background: transparent; color: #fff; font-weight: 700; padding: 8px 12px; text-align: center; }
+    .sys-banner.install { background: #E8F0FE; color: #1A3A8A; }
+    .sys-banner.backup { background: #FFF4DB; color: #6B3F00; border: 1.5px solid #F0C36B; }
+    .sys-banner.backup, .sys-banner.install { flex-wrap: wrap; }
+    .sys-text { flex: 1 1 100%; min-width: 0; }
+    .sys-btns { display: flex; gap: 6px; width: 100%; }
+    .sys-btns button { flex: 1; }
+    .sys-btns button.ghost[aria-label] { flex: 0 0 56px; }
+    .sys-btns button { min-height: 48px; padding: 6px 12px; border-radius: 14px; border: 0; font-weight: 700; }
+    .sys-btns button .ta { font-size: 15px; }
+    .sys-btns .ok { background: #0A6B3C; color: #fff; }
+    .sys-btns .ghost { background: #F0E7DB; color: var(--ink); }
+    .head-btns { display: flex; gap: 8px; }
+    .icon-btn[hidden] { display: none !important; }
+    .tot.profit.masked .v { letter-spacing: 2px; color: var(--muted); }
+    .tot.profit.masked { cursor: pointer; }
+    .pin-modal { z-index: 45; text-align: center; }
+    .pin-modal .pin-head { display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
+    .pin-modal h3 { margin: 0; font-size: 20px; }
+    .pin-reason { margin: 4px 0 10px; text-align: left; }
+    .pin-dots { display: flex; gap: 14px; justify-content: center; margin: 10px 0 6px; }
+    .pin-dots i { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid var(--coffee); display: block; }
+    .pin-dots i.on { background: var(--coffee); }
+    .pin-msg { min-height: 44px; font-weight: 700; color: var(--expense); margin: 4px 0; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 320px; margin: 0 auto 10px; }
+    .pin-pad button { min-height: 66px; font-size: 28px; font-weight: 700; border-radius: 18px; border: 1.5px solid var(--line); background: #fff; }
+    .pin-pad button:active { background: #F0E7DB; }
+    .pin-pad button.alt { font-size: 22px; background: #F0E7DB; }
+    .pin-view { text-align: left; }
+    .pin-view input, .pin-view select { width: 100%; margin: 6px 0; }
+    .pin-warn { background: #FFF4DB; border-radius: 12px; padding: 10px 12px; font-weight: 700; color: #6B3F00; margin: 8px 0; }
+    .lock-card { text-align: center; padding: 22px 12px; }
+    .lock-card .big { font-size: 44px; }
+    .rc-row { display: grid; grid-template-columns: 1fr 84px 92px 48px; gap: 6px; align-items: center; margin: 6px 0; }
+    .rc-row select, .rc-row input { min-height: 52px; width: 100%; min-width: 0; padding: 4px 6px; }
+    .rc-row .btn-del { min-height: 48px; }
+    .stock-fx { display: block; font-size: 13px; font-weight: 700; color: #6B4F3A; }
+    .badge.neg { background: #FDECEC; color: #9B1C1C; }
   </style>
 </head>
 <body>
@@ -533,9 +587,26 @@
           <h1 id="shopName">இட்லி தோசை டீ கடை</h1>
           <div class="sub">இட்லி • தோசை • டீ — Mumbai</div>
         </div>
-        <button type="button" class="icon-btn" id="btnSettings" aria-label="அமைப்புகள் / Settings" data-i18n-aria="அமைப்புகள்|Settings">⚙</button>
+        <div class="head-btns">
+          <button type="button" class="icon-btn" id="btnLock" hidden aria-label="பூட்டு / Lock" data-i18n-aria="பூட்டு|Lock">🔒</button>
+          <button type="button" class="icon-btn" id="btnSettings" aria-label="அமைப்புகள் / Settings" data-i18n-aria="அமைப்புகள்|Settings">⚙</button>
+        </div>
       </div>
     </header>
+
+    <div class="sys-banners" id="sysBanners">
+      <div class="sys-banner update" id="updateBanner" hidden role="status">
+        <button type="button" id="updateBtn"><span class="bi" style="align-items:center"><span class="ta">🔄 புதிய பதிப்பு தயார் — தட்டி புதுப்பிக்கவும்</span><span class="en">Update available — tap to refresh</span></span></button>
+      </div>
+      <div class="sys-banner install" id="installBanner" hidden>
+        <div class="sys-text"><span class="bi"><span class="ta">📲 ஆப்பாக நிறுவுங்கள் — இணையம் இல்லாமலும் திறக்கும்</span><span class="en">Install as an app — works offline</span></span></div>
+        <div class="sys-btns">
+          <button type="button" class="ok" id="installBtn"><span class="bi" style="align-items:center"><span class="ta">நிறுவு</span><span class="en">Install</span></span></button>
+          <button type="button" class="ghost" id="installClose" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">✕</button>
+        </div>
+      </div>
+      <div class="sys-banner backup" id="backupBanner" hidden></div>
+    </div>
 
     <div class="date-bar">
       <div class="label" id="dateLabel"></div>
@@ -655,6 +726,7 @@
     <div id="panelShop" class="panel" hidden>
       <div class="shop-sub" id="shopSub">
         <button type="button" class="on" data-shop="stock"><span class="bi" style="align-items:center"><span class="ta">இருப்பு</span><span class="en">Stock</span></span></button>
+        <button type="button" data-shop="recipes"><span class="bi" style="align-items:center"><span class="ta">செய்முறை</span><span class="en">Recipes</span></span></button>
         <button type="button" data-shop="margins"><span class="bi" style="align-items:center"><span class="ta">லாபம்</span><span class="en">Margins</span></span></button>
         <button type="button" data-shop="staff"><span class="bi" style="align-items:center"><span class="ta">பணியாளர்</span><span class="en">Staff</span></span></button>
       </div>
@@ -714,11 +786,39 @@
             </div>
           </form>
           <div id="stockList"></div>
+          <p class="help"><span class="bi"><span class="ta">விற்பனைக்கு ஏற்ப இருப்பு தானாகக் குறையும் (செய்முறை தாவலில் அமைக்கவும்). வாங்கும் செலவுகளும் இருப்பைக் கூட்டும்.</span><span class="en">Stock goes down by itself as you sell (set it in the Recipes tab). Purchases add to stock.</span></span></p>
         </div>
         <div class="card" style="background:#FFF9E6">
           <strong class="bi"><span class="ta">குறைந்த இருப்பு எச்சரிக்கை</span><span class="en">Low-stock alerts</span></strong>
           <p class="help" id="stockAlertBox" style="margin:6px 0 0"><span class="bi"><span class="ta">அனைத்து பொருட்களும் போதிய அளவில் உள்ளன.</span><span class="en">All tracked items are above the alert level.</span></span></p>
         </div>
+      </div>
+
+      <div id="shopRecipes" hidden>
+        <div class="card">
+          <h2 class="sec bi" style="margin-top:0"><span class="ta">செய்முறை — ஒரு விற்பனைக்கு எவ்வளவு சரக்கு</span><span class="en">Recipe — stock used per item sold</span></h2>
+          <p class="help"><span class="bi"><span class="ta">இட்லி, டீ போன்றவை விற்கும்போது இந்தப் பொருட்கள் இருப்பிலிருந்து தானாகக் குறையும். பதிவை நீக்கினால் / மாற்றினால் இருப்பும் சரியாகும்.</span><span class="en">When you sell an item, these ingredients are taken off the stock by themselves. Deleting or editing a sale fixes the stock again.</span></span></p>
+          <div id="recipeList"></div>
+        </div>
+        <div class="card" id="recipeEditCard" hidden>
+          <h2 class="sec" id="recipeEditTitle" style="margin-top:0"></h2>
+          <p class="help"><span class="bi"><span class="ta">ஒரு விற்பனை அலகுக்கான அளவு (எ.கா. 1 இட்லிக்கு மாவு 50 கிராம்).</span><span class="en">Amount for ONE item sold (e.g. 50 gram of batter for 1 idli).</span></span></p>
+          <div id="recipeLines"></div>
+          <button type="button" class="ghost" id="recipeAddLine" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">+ சரக்கு சேர்</span><span class="en">+ Add ingredient</span></span></button>
+          <div class="form-error" id="recipeError" role="alert"></div>
+          <button type="button" class="save" id="recipeSave"><span class="bi" style="align-items:center"><span class="ta">செய்முறையைச் சேமி</span><span class="en">Save recipe</span></span></button>
+          <div class="modal-actions">
+            <button type="button" class="ghost" id="recipeCancel"><span class="bi" style="align-items:center"><span class="ta">வேண்டாம்</span><span class="en">Cancel</span></span></button>
+            <button type="button" class="danger" id="recipeClear"><span class="bi" style="align-items:center"><span class="ta">செய்முறையை நீக்கு</span><span class="en">Remove recipe</span></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card lock-card" id="shopLock" hidden>
+        <div class="big" aria-hidden="true">🔒</div>
+        <h2 class="sec bi" style="margin:6px 0"><span class="ta">PIN தேவை</span><span class="en">PIN needed</span></h2>
+        <p class="help"><span class="bi"><span class="ta">லாபம், செலவு விகிதம், கூலி — உரிமையாளர் PIN போட்டுப் பாருங்கள்.</span><span class="en">Profit, margins and wages need the owner PIN.</span></span></p>
+        <button type="button" class="save" id="shopUnlock"><span class="bi" style="align-items:center"><span class="ta">PIN போடு</span><span class="en">Enter PIN</span></span></button>
       </div>
 
       <div id="shopMargins" hidden>
@@ -911,6 +1011,52 @@
     </div>
   </div>
 
+  <div class="modal pin-modal" id="pinModal" hidden role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <div class="pin-head">
+      <h3 id="pinTitle"></h3>
+      <button type="button" class="x" id="pinClose" aria-label="மூடு / Close" data-i18n-aria="மூடு|Close">×</button>
+    </div>
+    <div class="help pin-reason" id="pinReason"></div>
+    <div id="pinViewPad">
+      <div class="pin-dots" id="pinDots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="pin-msg" id="pinMsg" role="alert"></div>
+      <div class="pin-pad" id="pinPad">
+        <button type="button" data-pk="1">1</button><button type="button" data-pk="2">2</button><button type="button" data-pk="3">3</button>
+        <button type="button" data-pk="4">4</button><button type="button" data-pk="5">5</button><button type="button" data-pk="6">6</button>
+        <button type="button" data-pk="7">7</button><button type="button" data-pk="8">8</button><button type="button" data-pk="9">9</button>
+        <button type="button" class="alt" data-pk="clear" aria-label="அழி / Clear" data-i18n-aria="அழி|Clear">C</button><button type="button" data-pk="0">0</button><button type="button" class="alt" data-pk="back" aria-label="பின்செல் / Backspace" data-i18n-aria="பின்செல்|Backspace">⌫</button>
+      </div>
+      <button type="button" class="linkish" id="pinForgot"><span class="bi" style="align-items:center"><span class="ta">PIN மறந்துவிட்டதா?</span><span class="en">Forgot PIN?</span></span></button>
+      <div class="lang-grid" id="pinLangRow" hidden>
+        <button type="button" data-pinlang="ta"><span class="lg-n">தமிழ் / Tamil</span></button>
+        <button type="button" data-pinlang="en"><span class="lg-n">English</span></button>
+        <button type="button" data-pinlang="hi"><span class="lg-n">हिंदी / Hindi</span></button>
+        <button type="button" data-pinlang="mr"><span class="lg-n">मराठी / Marathi</span></button>
+      </div>
+    </div>
+    <div class="pin-view" id="pinViewForgot" hidden>
+      <p class="modal-q" id="pinQuestion"></p>
+      <input id="pinAnswer" autocomplete="off" aria-label="பதில் / Answer" data-i18n-aria="பதில்|Answer">
+      <div class="pin-msg" id="pinForgotMsg" role="alert"></div>
+      <button type="button" class="save" id="pinAnswerOk"><span class="bi" style="align-items:center"><span class="ta">பதிலைச் சரிபார்</span><span class="en">Check answer</span></span></button>
+      <button type="button" class="linkish" id="pinNoAnswer" style="width:100%"><span class="bi" style="align-items:center"><span class="ta">பதிலும் நினைவில்லை</span><span class="en">I don't remember the answer either</span></span></button>
+    </div>
+    <div class="pin-view" id="pinViewReset" hidden>
+      <div class="pin-warn" id="pinResetWarn"></div>
+      <div class="pin-msg" id="pinResetMsg"></div>
+      <button type="button" class="danger" id="pinResetGo"></button>
+    </div>
+    <div class="pin-view" id="pinViewSetup" hidden>
+      <p class="help"><span class="bi"><span class="ta">PIN மறந்தால் மீட்க ஒரு கேள்வி-பதில் வையுங்கள். பதிலை எழுதி வைத்துக்கொள்ளுங்கள்.</span><span class="en">Pick a question and answer to recover a forgotten PIN. Keep the answer safe.</span></span></p>
+      <label class="lab bi" for="pinQSel"><span class="ta">கேள்வி</span><span class="en">Question</span></label>
+      <select id="pinQSel"></select>
+      <label class="lab bi" for="pinASet"><span class="ta">பதில்</span><span class="en">Answer</span></label>
+      <input id="pinASet" autocomplete="off">
+      <div class="pin-msg" id="pinSetupMsg" role="alert"></div>
+      <button type="button" class="save" id="pinSetupSave"><span class="bi" style="align-items:center"><span class="ta">PIN-ஐ சேமி</span><span class="en">Save PIN</span></span></button>
+    </div>
+  </div>
+
   <div class="settings" id="settings" hidden role="dialog" aria-modal="true">
     <div class="set-h">
       <h3 class="bi"><span class="ta">அமைப்புகள்</span><span class="en">Settings</span></h3>
@@ -930,6 +1076,12 @@
     </div>
     <label class="check-row"><input type="checkbox" id="setMicPulse"> <span class="bi"><span class="ta">பேசும்போது ஒலி அலை காட்டு (மைக்கைத் தனியாகத் திறக்காது)</span><span class="en">Show a sound pulse while listening (does not open the mic separately)</span></span></label>
     <p class="help"><span class="bi"><span class="ta">கூட்டத்தில்: போனை வாய்க்கு அருகில் வைத்து, அழுத்திப் பிடித்து பேசுங்கள்.</span><span class="en">In a crowd: hold the phone close to your mouth and use Hold to talk.</span></span></p>
+    <h3 class="bi" style="margin:14px 0 6px;font-size:18px"><span class="ta">உரிமையாளர் PIN</span><span class="en">Owner PIN</span></h3>
+    <p class="help" id="pinStatus"></p>
+    <p class="help"><span class="bi"><span class="ta">PIN இருந்தால்: பழைய பதிவை நீக்க / திருத்த, இருப்பு, லாபம், கூலி, அமைப்புகள், காப்பு மீட்பு — எல்லாவற்றுக்கும் PIN கேட்கும். இன்றைய புதிய பதிவுகளுக்குத் தேவையில்லை.</span><span class="en">With a PIN: deleting or editing past entries, stock, profit, wages, settings and restore all ask for it. Today's own new entries stay free.</span></span></p>
+    <button type="button" class="ghost" id="btnPinSet" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN அமை</span><span class="en">Set owner PIN</span></span></button>
+    <button type="button" class="ghost" id="btnPinChange" hidden style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN மாற்று</span><span class="en">Change PIN</span></span></button>
+    <button type="button" class="danger" id="btnPinOff" hidden style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">PIN-ஐ நிறுத்து</span><span class="en">Turn off PIN</span></span></button>
     <label class="lab bi" for="setShopName"><span class="ta">கடையின் பெயர்</span><span class="en">Shop name</span></label>
     <input class="full" id="setShopName" maxlength="80">
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">மெனு விலைகள்</span><span class="en">Menu prices (editable)</span></h3>
@@ -939,6 +1091,8 @@
     <button type="button" class="save" id="saveSettings" style="margin-top:12px"><span class="bi" style="align-items:center"><span class="ta">சேமி</span><span class="en">Save settings</span></span></button>
     <h3 class="bi" style="margin:22px 0 6px;font-size:18px"><span class="ta">காப்பு</span><span class="en">Backup</span></h3>
     <p class="help"><span class="bi"><span class="ta">பதிவுகள் இந்தத் தொலைபேசியின் நினைவிலேயே இருக்கும். வேறு போனுக்கு மாற்றினாலோ, தரவை அழித்தாலோ காப்புக் கோப்பு தேவை.</span><span class="en">Entries stay on this phone. Export a backup before changing phones.</span></span></p>
+    <p class="help" id="lastBackupLine"></p>
+    <button type="button" class="save" id="btnShareBackup" style="margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">📤 காப்பைப் பகிர் / சேமி (WhatsApp, Drive)</span><span class="en">Share or save backup (WhatsApp, Drive)</span></span></button>
     <button type="button" class="ghost" id="btnExport" style="width:100%;margin:6px 0"><span class="bi" style="align-items:center"><span class="ta">காப்புப் பதிவிறக்கம் (JSON)</span><span class="en">Download backup (JSON)</span></span></button>
     <label class="ghost" style="display:block;text-align:center;padding:12px;margin:6px 0;border-radius:14px;font-weight:700">
       <span class="bi" style="align-items:center"><span class="ta">காப்பை மீட்டெடு</span><span class="en">Restore backup</span></span>
