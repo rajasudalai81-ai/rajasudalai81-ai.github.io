@@ -70,6 +70,14 @@ One sentence can record both a spend and a sale (for example "30 ruva kazhi 50 v
 - **Backup safety**: daily reminder, one-tap share (WhatsApp / Drive) or download, last backup date in Settings.
 - Build: `python3 tools/make-icons.py` (once, needs Pillow) then `node build.js` → `index.html`, `sw.js`, `manifest.webmanifest`.
 
+## v11 (28 Nov 2026)
+- **Undo 5 s** after any save (one tap undoes every line of a multi-entry voice/quick save or a combo; stock rolls back). **Edit & delete log** in Settings (read only; who/when/old → new; device name optional).
+- **Galla check** (Summary): opening + cash sales (+ credit repaid in cash) − cash expenses = expected; enter actual → Short / Extra; included in the WhatsApp summary.
+- **Supplier due book** (Shop → Suppliers): bills, payments, balances; optional link of a payment to an expense (no double counting).
+- **Min-stock** level per item (red LOW badge, dot on Shop tab) and **Wastage** (reduces stock; optional loss counts in profit but not as cash).
+- **Last 7 / 30 days** summary (sales, expenses, profit, top items).
+- **Combo buttons** (Settings → up to 3) on Today: one tap logs several items and deducts recipe stock.
+
 ## Tests
 
     node tests/run.js

@@ -1429,6 +1429,201 @@ assertEqual(defaultMenu().length, 6, "default 6 menu items");
   assert(pl.app === "kadai-tracker" && pl.entries.length === 1 && pl.exportedAt === "2026-11-28T08:00:00.000Z", "v10 backup payload");
 }
 
+// ---- v11: audit log, galla, suppliers, wastage, rolling summary, combos ----
+{
+  const LL = require("../logic.js");
+  const mk = (o) => ({ id: "e" + Math.random().toString(36).slice(2, 8), date: "2026-11-28", payMode: "cash", ...o });
+  // audit
+  const oldE = mk({ id: "a1", type: "income", item: "இட்லி", qty: 4, unit: "எண்ணிக்கை", unitPrice: 10, amount: 40 });
+  const edited = { ...oldE, qty: 5, amount: 50 };
+  const rec = LL.makeAuditRecord("edit", oldE, edited, { device: "Ravi phone", now: Date.parse("2026-11-28T10:00:00Z") });
+  assert(rec && rec.action === "edit" && rec.by === "Ravi phone" && rec.at === "2026-11-28T10:00:00.000Z", "v11 audit: edit record has who/when");
+  assertEqual(rec.changed.join(","), "qty,amount", "v11 audit: only changed fields");
+  assert(rec.old.qty === 4 && rec.new.qty === 5 && rec.old.amount === 40 && rec.new.amount === 50, "v11 audit: old → new values");
+  assert(LL.makeAuditRecord("edit", oldE, { ...oldE }, {}) === null, "v11 audit: no-op edit is not logged");
+  const del = LL.makeAuditRecord("delete", oldE, null, { device: "" });
+  assert(del.action === "delete" && del.new === null && del.old.amount === 40 && del.item === "இட்லி", "v11 audit: delete keeps the old entry");
+  let log = [];
+  for (let i = 0; i < LL.AUDIT_MAX + 20; i++) log = LL.addAudit(log, LL.makeAuditRecord("delete", { ...oldE, id: "x" + i }, null, {}));
+  assertEqual(log.length, LL.AUDIT_MAX, "v11 audit: log capped");
+  assertEqual(log[0].entryId, "x" + (LL.AUDIT_MAX + 19), "v11 audit: newest first");
+  assertEqual(LL.addAudit([1], null).length, 1, "v11 audit: null record ignored");
+
+  // galla
+  const day = "2026-11-28";
+  const ents = [
+    mk({ id: "s1", type: "income", item: "tea", amount: 100 }),
+    mk({ id: "s2", type: "income", item: "tea", amount: 50, payMode: "upi" }),
+    mk({ id: "s3", type: "income", item: "dosa", amount: 80, payMode: "credit", customerName: "Ramesh" }),
+    mk({ id: "x1", type: "expense", item: "milk", amount: 30 }),
+    mk({ id: "x2", type: "expense", item: "gas", amount: 20, payMode: "upi" }),
+    mk({ id: "x3", type: "expense", item: "Wastage — milk", amount: 15, nonCash: true, source: "waste" }),
+    mk({ id: "old", date: "2026-11-27", type: "income", item: "tea", amount: 999 }),
+    mk({ id: "adj", type: "income", item: "adj", amount: -10, note: "short change" })
+  ];
+  let g = LL.gallaFigures(ents, day, { opening: 200 });
+  assertEqual(g.cashSales, 90, "v11 galla: cash sales only (UPI/credit/other days excluded; minus adjustment included)");
+  assertEqual(g.cashExpenses, 30, "v11 galla: cash expenses only (UPI and non-cash wastage excluded)");
+  assertEqual(g.expected, 260, "v11 galla: Expected = opening + cash sales − cash expenses");
+  assertEqual(LL.gallaFigures(ents, day, {}).expected, 60, "v11 galla: no opening counts as 0");
+  // kadan repayment in cash today counts; UPI repayment and earlier-day repayment do not
+  const paidCash = LL.markKadanPaid(ents, "Ramesh", "cash");
+  const gk = LL.gallaFigures(paidCash, day, { opening: 200 });
+  assertEqual(gk.kadanCash, 80, "v11 galla: credit repaid in cash today is cash in");
+  assertEqual(gk.expected, 340, "v11 galla: expected includes repaid credit");
+  const paidUpi = LL.markKadanPaid(ents, "Ramesh", "upi");
+  assertEqual(LL.gallaFigures(paidUpi, day, { opening: 200 }).kadanCash, 0, "v11 galla: credit repaid by UPI is not cash");
+  const paidOld = paidCash.map((e) => (e.id === "s3" ? { ...e, creditPaidAt: "2026-11-20T05:00:00.000Z" } : e));
+  assertEqual(LL.gallaFigures(paidOld, day, { opening: 200 }).kadanCash, 0, "v11 galla: repayment on another day not counted today");
+  assertEqual(LL.markKadanPaid(ents, "Ramesh").find((e) => e.id === "s3").creditPaidVia, undefined, "v11 galla: markKadanPaid without via keeps old shape");
+  // supplier payments: cash out unless already an expense entry
+  const stx = [
+    { id: "t1", supplierId: "p", type: "payment", amount: 40, date: day, method: "cash", entryId: "" },
+    { id: "t2", supplierId: "p", type: "payment", amount: 60, date: day, method: "cash", entryId: "x1" },
+    { id: "t3", supplierId: "p", type: "payment", amount: 25, date: day, method: "upi", entryId: "" },
+    { id: "t4", supplierId: "p", type: "bill", amount: 500, date: day, method: "", entryId: "" }
+  ];
+  const gs = LL.gallaFigures(ents, day, { opening: 200, supplierTx: stx });
+  assertEqual(gs.supplierCash, 40, "v11 galla: unlinked cash supplier payment is cash out; linked, UPI and bills are not");
+  assertEqual(gs.expected, 220, "v11 galla: expected after supplier cash");
+  assertEqual(LL.gallaFigures(ents.filter((e) => e.id !== "x1"), day, { opening: 200, supplierTx: stx }).supplierCash, 100, "v11 galla: if the linked expense is deleted the payment counts as cash out again");
+  assertEqual(LL.gallaDifference(260, 250).status, "short", "v11 galla: short");
+  assertEqual(LL.gallaDifference(260, 250).diff, -10, "v11 galla: short amount");
+  assertEqual(LL.gallaDifference(260, 275).status, "extra", "v11 galla: extra");
+  assertEqual(LL.gallaDifference(260, 260).status, "even", "v11 galla: even");
+  assertEqual(LL.gallaDifference(260, "").status, "none", "v11 galla: no actual yet");
+  let gal = LL.gallaSet({}, day, { opening: 200 });
+  gal = LL.gallaSet(gal, day, { actual: 250 });
+  assert(LL.gallaGet(gal, day).opening === 200 && LL.gallaGet(gal, day).actual === 250, "v11 galla: opening + actual stored per day");
+  assert(LL.gallaGet(gal, "2026-11-29").opening === null, "v11 galla: another day is empty");
+  let big = {};
+  for (let i = 0; i < 150; i++) big = LL.gallaSet(big, LL.addDaysISO ? LL.addDaysISO("2026-01-01", i) : "2026-01-" + String(1 + (i % 28)).padStart(2, "0"), { opening: i });
+  assert(Object.keys(big).length <= 120, "v11 galla: old days pruned");
+  const gtext = LL.daySummaryTextLang(ents, day, "Shop", "en", { galla: { ...g, opening: 200, actual: 250 } });
+  assert(/Cash box check/.test(gtext) && /Expected cash: ₹260/.test(gtext) && /Actual cash: ₹250/.test(gtext) && /Short: ₹10/.test(gtext), "v11 galla: WhatsApp summary (en) has opening/expected/actual/short");
+  const gtext2 = LL.daySummaryTextLang(ents, day, "Shop", "ta", { galla: { ...g, opening: 200, actual: 275 } });
+  assert(/கல்லா சரிபார்ப்பு/.test(gtext2) && /கூடுதல் \/ Extra: ₹15/.test(gtext2), "v11 galla: WhatsApp summary (ta) shows extra");
+  const gtext3 = LL.daySummaryTextLang(ents, day, "Shop", "hi", { galla: { ...g, opening: 200, actual: 250 } });
+  assert(/गल्ला जाँच/.test(gtext3), "v11 galla: WhatsApp summary (hi)");
+  assert(!/Cash box/.test(LL.daySummaryTextLang(ents, day, "Shop", "en")) && !/Cash box/.test(LL.daySummaryTextLang(ents, day, "Shop", "en", { galla: { ...g, opening: null, actual: null } })), "v11 galla: summary unchanged when no galla data");
+
+  // rolling summary
+  const roll = [
+    mk({ date: "2026-11-28", type: "income", item: "idli", amount: 100, qty: 10 }),
+    mk({ date: "2026-11-25", type: "income", item: "tea", amount: 60, qty: 6 }),
+    mk({ date: "2026-11-22", type: "income", item: "idli", amount: 40, qty: 4 }),
+    mk({ date: "2026-11-21", type: "income", item: "vada", amount: 500, qty: 50 }),
+    mk({ date: "2026-11-27", type: "expense", item: "milk", amount: 70 }),
+    mk({ date: "2026-11-27", type: "expense", item: "Wastage — milk", amount: 10, source: "waste", nonCash: true }),
+    mk({ date: "2026-10-30", type: "income", item: "idli", amount: 300, qty: 30 }),
+    mk({ date: "2026-10-29", type: "income", item: "idli", amount: 7000, qty: 1 })
+  ];
+  const r7 = LL.rollingSummary(roll, "2026-11-28", 7);
+  assertEqual(r7.from, "2026-11-22", "v11 rolling: 7 days = today and the 6 before");
+  assertEqual(r7.income, 200, "v11 rolling: 7-day sales");
+  assertEqual(r7.expense, 80, "v11 rolling: 7-day expenses");
+  assertEqual(r7.profit, 120, "v11 rolling: 7-day net profit");
+  assertEqual(r7.wasteCost, 10, "v11 rolling: wastage shown");
+  assertEqual(r7.top[0].item, "idli", "v11 rolling: top seller");
+  assertEqual(r7.top[0].amount, 140, "v11 rolling: top seller amount");
+  assertEqual(r7.perDay.length, 7, "v11 rolling: one bar per day");
+  const r30 = LL.rollingSummary(roll, "2026-11-28", 30);
+  assertEqual(r30.from, "2026-10-30", "v11 rolling: 30 days start");
+  assertEqual(r30.income, 1000, "v11 rolling: 30-day sales (29 Oct excluded)");
+  assertEqual(r30.top[0].item, "vada", "v11 rolling: 30-day top seller");
+  assertEqual(r30.perDay.length, 30, "v11 rolling: 30 bars");
+
+  // suppliers
+  let sup = LL.addSupplier([], { name: " Murugan Milk " });
+  assert(sup.ok && sup.suppliers.length === 1 && sup.supplier.name === "Murugan Milk", "v11 supplier: add");
+  const again = LL.addSupplier(sup.suppliers, { name: "murugan  milk" });
+  assert(again.existing && again.suppliers.length === 1, "v11 supplier: duplicate name reuses");
+  assert(!LL.addSupplier([], { name: "  " }).ok, "v11 supplier: name required");
+  const sid = sup.supplier.id;
+  let tx = [];
+  tx = LL.addSupplierTx(tx, { supplierId: sid, type: "bill", amount: 500, date: "2026-11-20", note: "milk week" }).tx;
+  tx = LL.addSupplierTx(tx, { supplierId: sid, type: "bill", amount: 300, date: "2026-11-24" }).tx;
+  const pay = LL.addSupplierTx(tx, { supplierId: sid, type: "payment", amount: 600, date: "2026-11-26", method: "upi" });
+  tx = pay.tx;
+  let bal = LL.supplierBalances(sup.suppliers, tx);
+  assert(bal[0].bills === 800 && bal[0].paid === 600 && bal[0].balance === 200 && bal[0].last === "2026-11-26", "v11 supplier: balance = bills − payments");
+  assertEqual(LL.supplierTotalDue(sup.suppliers, tx), 200, "v11 supplier: total due");
+  assert(!LL.addSupplierTx(tx, { supplierId: sid, type: "bill", amount: 0 }).ok && !LL.addSupplierTx(tx, { type: "bill", amount: 5 }).ok, "v11 supplier: amount and supplier required");
+  const over = LL.addSupplierTx(tx, { supplierId: sid, type: "payment", amount: 300, date: "2026-11-27" }).tx;
+  assertEqual(LL.supplierBalances(sup.suppliers, over)[0].balance, -100, "v11 supplier: overpayment shows as advance (negative)");
+  assertEqual(LL.supplierTotalDue(sup.suppliers, over), 0, "v11 supplier: advance does not reduce total due of others");
+  const rm = LL.removeSupplierTx(tx, pay.rec.id);
+  assert(rm.ok && LL.supplierBalances(sup.suppliers, rm.tx)[0].balance === 800, "v11 supplier: deleting a payment restores the balance");
+  const exp = LL.supplierPaymentExpense(sup.supplier, { ...pay.rec, entryId: "ent1", method: "upi" });
+  assert(exp.type === "expense" && exp.payMode === "upi" && exp.amount === 600 && exp.id === "ent1" && exp.source === "supplier", "v11 supplier: optional payment → expense draft");
+  const ledg = LL.createLedger([]);
+  const added = ledg.add(exp);
+  assert(added.ok && added.entry.source === "supplier" && added.entry.refId === pay.rec.id, "v11 supplier: ledger keeps source/refId");
+  assert(LL.computeTotals(added.entries, "2026-11-26").expense === 600, "v11 supplier: linked payment counts once in expenses");
+  assertEqual(LL.computeTotals(added.entries, "2026-11-20").expense, 0, "v11 supplier: bills alone are not expenses");
+  const gone = LL.removeSupplier(sup.suppliers, tx, sid);
+  assert(gone.ok && gone.suppliers.length === 0 && gone.tx.length === 0, "v11 supplier: removing a supplier removes its book lines");
+  assert(LL.normalizeSupplierTx([{ supplierId: "x", amount: -5 }]).length === 0, "v11 supplier: bad lines dropped");
+
+  // wastage + min stock
+  const stock0 = [{ id: "maavu", nameTa: "மாவு", nameEn: "Batter", qty: 10, unit: "கிலோ", minAlert: 8 }, { id: "paal", nameTa: "பால்", nameEn: "Milk", qty: 5, unit: "லிட்டர்", minAlert: 2 }];
+  const mv0 = [{ id: "m1", type: "in", itemId: "paal", qty: 10, amount: 500, date: "2026-11-20", createdAt: "2026-11-20T01:00:00Z" }];
+  assertEqual(LL.estimateUnitCost(mv0, "paal"), 50, "v11 waste: unit cost from last purchase");
+  assertEqual(LL.estimateUnitCost(mv0, "maavu"), null, "v11 waste: unknown cost");
+  const w = LL.wasteStock(stock0, mv0, { itemId: "paal", qty: 2, date: day, reason: "spoiled", cost: 100, label: "Wastage" });
+  assert(w.ok && w.stock.find((x) => x.id === "paal").qty === 3, "v11 waste: stock reduced");
+  assert(w.move.kind === "waste" && !w.move.entryId && w.move.wasteEntryId === w.expense.id && w.move.type === "out", "v11 waste: waste move is not an auto-managed (entryId) move");
+  assert(w.expense.nonCash === true && w.expense.source === "waste" && w.expense.amount === 100 && w.expense.type === "expense", "v11 waste: cost → non-cash expense (counts in profit)");
+  const wl = LL.createLedger([]).add(w.expense);
+  assertEqual(LL.computeTotals(wl.entries, day).expense, 100, "v11 waste: cost reduces profit");
+  assertEqual(LL.gallaFigures(wl.entries, day, { opening: 0 }).cashExpenses, 0, "v11 waste: wastage is not cash out of the box");
+  const w0 = LL.wasteStock(stock0, mv0, { itemId: "maavu", qty: 1, date: day, reason: "leftover" });
+  assert(w0.ok && w0.expense === null && w0.stock[0].qty === 9, "v11 waste: no cost → stock only, no expense");
+  const wneg = LL.wasteStock(stock0, mv0, { itemId: "paal", qty: 9, date: day });
+  assert(wneg.ok && wneg.stock[1].qty === -4, "v11 waste: allowed past zero (flagged negative elsewhere)");
+  assert(!LL.wasteStock(stock0, mv0, { itemId: "paal", qty: 0 }).ok && !LL.wasteStock(stock0, mv0, { itemId: "zzz", qty: 1 }).ok, "v11 waste: validates qty and item");
+  assertEqual(LL.wasteMoves(w.stockMoves).length, 1, "v11 waste: list only waste moves");
+  const back = LL.removeWasteMove(w.stock, w.stockMoves, w.move.id);
+  assert(back.ok && back.stock.find((x) => x.id === "paal").qty === 5 && back.stockMoves.length === 1, "v11 waste: removing restores stock");
+  // auto-sync must never touch waste moves or waste/supplier expenses
+  const setS = { stock: w.stock, stockMoves: w.stockMoves, recipes: {}, menu: [], autoStockSince: "2026-01-01" };
+  const syn = LL.syncAutoStock(wl.entries, setS);
+  assert(syn.stock.find((x) => x.id === "paal").qty === 3 && syn.stockMoves.some((m) => m.kind === "waste"), "v11 waste: sync leaves waste moves alone");
+  const supExpense = LL.createLedger([]).add({ type: "expense", date: day, item: "பால்", qty: 3, unit: "லிட்டர்", amount: 150, source: "supplier", payMode: "cash" });
+  const syn2 = LL.syncAutoStock(supExpense.entries, { ...setS, stock: stock0, stockMoves: [] });
+  assert(syn2.stock.find((x) => x.id === "paal").qty === 5, "v11 supplier: a supplier-payment expense never adds stock");
+  assert(LL.isLowStock({ id: "maavu", qty: 5, minAlert: 8 }, []) && !LL.isLowStock({ id: "maavu", qty: 9, minAlert: 8 }, []), "v11 stock: low when qty <= min");
+  const ms = LL.setMinAlert(stock0, "maavu", 12);
+  assert(ms.ok && ms.stock[0].minAlert === 12 && LL.isLowStock(ms.stock[0], []), "v11 stock: set min level");
+  assert(!LL.setMinAlert(stock0, "maavu", -1).ok && !LL.setMinAlert(stock0, "none", 1).ok, "v11 stock: min level validated");
+
+  // combos
+  const menu11 = [{ id: "idli", nameTa: "இட்லி", price: 10 }, { id: "tea", nameTa: "டீ", price: 12 }, { id: "vada", nameTa: "வடை", price: 8 }];
+  const combos = LL.normalizeCombos([
+    { id: "c1", name: "இட்லி + டீ", lines: [{ menuId: "idli", qty: 2 }, { menuId: "tea", qty: 1 }] },
+    { id: "c2", lines: [{ menuId: "gone", qty: 1 }] },
+    { id: "c3", lines: [{ menuId: "vada", qty: 0 }, { menuId: "tea", qty: 200 }] },
+    { id: "c4", lines: [{ menuId: "vada", qty: 1 }] },
+    { id: "c5", lines: [{ menuId: "vada", qty: 1 }] }
+  ], menu11);
+  assertEqual(combos.length, 3, "v11 combo: at most 3, invalid ones dropped");
+  assertEqual(LL.comboTotal(combos[0], menu11), 32, "v11 combo: total from menu prices");
+  assertEqual(combos[1].lines[0].qty, 1, "v11 combo: qty at least 1");
+  assertEqual(combos[1].lines[1].qty, 99, "v11 combo: qty capped");
+  // migration
+  const m11 = LL.migrateV11({ menu: menu11 });
+  assert(Array.isArray(m11.auditLog) && m11.galla && Array.isArray(m11.suppliers) && Array.isArray(m11.supplierTx) && Array.isArray(m11.combos) && m11.deviceName === "", "v11 migration: new settings fields added");
+  const m11b = LL.migrateV11({ menu: menu11, suppliers: [{ name: "A" }], galla: { "2026-11-28": { opening: 5 } }, deviceName: "  Ravi " });
+  assert(m11b.suppliers.length === 1 && m11b.galla["2026-11-28"].opening === 5 && m11b.deviceName === "Ravi", "v11 migration: keeps existing data");
+  // combo sale deducts recipe stock via the normal sync
+  const rs = { menu: menu11, stock: [{ id: "maavu", nameTa: "மாவு", nameEn: "Batter", qty: 10, unit: "கிலோ", minAlert: 1 }], stockMoves: [], recipes: { idli: { since: "2026-01-01", lines: [{ stockId: "maavu", qty: 0.05 }] } }, autoStockSince: "2026-01-01" };
+  const cl = LL.createLedger([]);
+  cl.add({ type: "income", date: day, item: "இட்லி", qty: 2, unit: "எண்ணிக்கை", unitPrice: 10, amount: 20, payMode: "cash" });
+  const cr = cl.add({ type: "income", date: day, item: "டீ", qty: 1, unit: "எண்ணிக்கை", unitPrice: 12, amount: 12, payMode: "cash" });
+  const cs = LL.syncAutoStock(cr.entries, rs);
+  assert(Math.abs(cs.stock[0].qty - 9.9) < 1e-9, "v11 combo: component sales deduct recipe stock (idli ×2 → 0.1 kg)");
+}
+
 // ---- v10: built PWA files (index.html / sw.js / manifest.webmanifest agree with each other) ----
 {
   const fsx = require("fs");

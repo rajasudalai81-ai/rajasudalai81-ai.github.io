@@ -69,6 +69,10 @@ const server = http.createServer((req, res) => {
     headless: "new",
     args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
   });
+  if (process.argv.includes("--only-v11")) { // quick loop while developing v11
+    await require("./ui-v11").run({ browser, url, assert, SHOTS, root, LIVE_URL, bump });
+    await browser.close(); server.close(); console.log("v11 only: passed"); return;
+  }
   const page = await browser.newPage();
   global.__page = page;
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
@@ -915,6 +919,8 @@ const server = http.createServer((req, res) => {
   await vp.close();
 
   await require("./ui-v10").run({ browser, url, assert, SHOTS, root, LIVE_URL, bump });
+
+  await require("./ui-v11").run({ browser, url, assert, SHOTS, root, LIVE_URL, bump });
 
   await browser.close();
   server.close();
