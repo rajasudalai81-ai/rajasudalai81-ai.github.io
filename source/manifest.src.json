@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "கடை கணக்கு — Kadai Tracker",
+  "short_name": "கடை கணக்கு",
+  "description": "Tamil-first shop income & expense book with voice entry. Works offline.",
+  "lang": "ta",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3E6D0",
+  "theme_color": "#3A2416",
+  "categories": ["business", "finance"],
+  "icons": [
+    { "src": "__ICON192__", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "__ICON512__", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "__ICONMASK__", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
